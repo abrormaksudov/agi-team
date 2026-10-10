@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: datamart__clients_id_xref
+    description: >
+      One row per person known to the bank, matched across the three systems by PINFL: the iABS customer, the TranzAxis
+      client and the mobile-app accounts. The hub of personal data — names, birth date and PINFL are personal data, so
+      access follows the personal-data rules of its data contract. A person can own several app accounts (a known
+      data-quality issue in the mobile backend): has_duplicate_app_accounts flags them, the newest is the primary one.
+      Full reload every operating day.
+    columns:
+      - name: pinfl
+        description: Personal identification number of an individual (14 digits), the key linking the systems. Personal data.
+        data_tests:
+          - not_null:
+              name: datamart__clients_id_xref__not_null_pinfl
+          - unique:
+              name: datamart__clients_id_xref__unique_pinfl
+      - name: last_name
+        description: Last name, from iABS, else from the newest app account. Personal data.
+      - name: first_name
+        description: First name. Personal data.
+      - name: middle_name
+        description: Patronymic. Personal data.
+      - name: birth_date
+        description: Date of birth. Personal data.
+      - name: iabs_customer_id
+        description: iABS customer id; empty if the person is not (yet) a bank customer
+      - name: iabs_customer_code
+        description: 8-digit iABS customer code, part of every account number of the customer
+      - name: tranzaxis_client_id
+        description: TranzAxis client id; empty if the person holds no card or loan
+      - name: app_user_count
+        description: Number of mobile-app accounts registered with this PINFL
+      - name: primary_app_user_id
+        description: The newest app account of the person
+      - name: app_user_ids
+        description: All app account ids of the person, oldest first, comma-separated
+      - name: has_duplicate_app_accounts
+        description: True when the person owns more than one app account
+      - name: first_registered_at
+        description: When the person first registered in the mobile app
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

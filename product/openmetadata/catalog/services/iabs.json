@@ -1,0 +1,58 @@
+{
+  "kind": "databaseService",
+  "owner": "core_banking",
+  "service": {
+    "name": "iabs",
+    "serviceType": "Postgres",
+    "description": "iABS (Fido-Biznes), core banking: customer master, accounts, core ledger, payments, deposits.",
+    "connection": {
+      "config": {
+        "type": "Postgres",
+        "username": "openmetadata",
+        "authType": { "password": "openmetadata" },
+        "hostPort": "iabs:5432",
+        "database": "iabs"
+      }
+    }
+  },
+  "pipelines": [
+    {
+      "name": "iabs_metadata",
+      "pipelineType": "metadata",
+      "stage": 1,
+      "schedule": "0 5 * * *",
+      "sourceConfig": {
+        "type": "DatabaseMetadata",
+        "includeViews": true,
+        "includeTags": true,
+        "includeDDL": true,
+        "schemaFilterPattern": { "includes": [ "^core$" ] }
+      }
+    },
+    {
+      "name": "iabs_usage",
+      "pipelineType": "usage",
+      "stage": 3,
+      "schedule": "30 5 * * *",
+      "sourceConfig": {
+        "type": "DatabaseUsage",
+        "queryLogDuration": 1,
+        "resultLimit": 1000
+      }
+    },
+    {
+      "name": "iabs_profiler",
+      "pipelineType": "profiler",
+      "stage": 4,
+      "schedule": "15 6 * * *",
+      "sourceConfig": {
+        "type": "Profiler",
+        "schemaFilterPattern": { "includes": [ "^core$" ] },
+        "computeTableMetrics": true,
+        "computeColumnMetrics": true,
+        "threadCount": 2,
+        "timeoutSeconds": 3600
+      }
+    }
+  ]
+}

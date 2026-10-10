@@ -1,0 +1,58 @@
+{
+  "kind": "databaseService",
+  "owner": "cards_and_lending",
+  "service": {
+    "name": "tranzaxis",
+    "serviceType": "Postgres",
+    "description": "TranzAxis (Compass Plus), retail credit and card engine: credit lines, microloans, cards, card transactions, delinquency.",
+    "connection": {
+      "config": {
+        "type": "Postgres",
+        "username": "openmetadata",
+        "authType": { "password": "openmetadata" },
+        "hostPort": "tranzaxis:5432",
+        "database": "tranzaxis"
+      }
+    }
+  },
+  "pipelines": [
+    {
+      "name": "tranzaxis_metadata",
+      "pipelineType": "metadata",
+      "stage": 1,
+      "schedule": "0 5 * * *",
+      "sourceConfig": {
+        "type": "DatabaseMetadata",
+        "includeViews": true,
+        "includeTags": true,
+        "includeDDL": true,
+        "schemaFilterPattern": { "includes": [ "^tx$" ] }
+      }
+    },
+    {
+      "name": "tranzaxis_usage",
+      "pipelineType": "usage",
+      "stage": 3,
+      "schedule": "30 5 * * *",
+      "sourceConfig": {
+        "type": "DatabaseUsage",
+        "queryLogDuration": 1,
+        "resultLimit": 1000
+      }
+    },
+    {
+      "name": "tranzaxis_profiler",
+      "pipelineType": "profiler",
+      "stage": 4,
+      "schedule": "15 6 * * *",
+      "sourceConfig": {
+        "type": "Profiler",
+        "schemaFilterPattern": { "includes": [ "^tx$" ] },
+        "computeTableMetrics": true,
+        "computeColumnMetrics": true,
+        "threadCount": 2,
+        "timeoutSeconds": 3600
+      }
+    }
+  ]
+}

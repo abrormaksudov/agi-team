@@ -1,0 +1,35 @@
+{
+  "kind": "pipelineService",
+  "owner": "data_platform",
+  "service": {
+    "name": "lab_airflow",
+    "serviceType": "Airflow",
+    "description": "The DWH orchestrator (Airflow 3): dbt__cod closes each operating day, one task per dbt model in dependency order.",
+    "connection": {
+      "config": {
+        "type": "Airflow",
+        "hostPort": "http://airflow-apiserver:8080",
+        "connection": {
+          "type": "RestAPI",
+          "authConfig": { "username": "admin", "password": "admin" },
+          "verifySSL": false
+        },
+        "pipelineFilterPattern": { "excludes": [ "^sim__" ] }
+      }
+    }
+  },
+  "pipelines": [
+    {
+      "name": "lab_airflow_metadata",
+      "pipelineType": "metadata",
+      "stage": 3,
+      "schedule": "45 * * * *",
+      "sourceConfig": {
+        "type": "PipelineMetadata",
+        "includeLineage": true,
+        "statusLookbackDays": 7,
+        "pipelineFilterPattern": { "excludes": [ "^sim__" ] }
+      }
+    }
+  ]
+}

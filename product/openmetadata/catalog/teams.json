@@ -1,0 +1,32 @@
+[
+  {
+    "name": "data_platform",
+    "displayName": "Data Platform",
+    "teamType": "Group",
+    "description": "Owns the data warehouse, its pipelines and this catalog: ODS, marts, metrics and data quality."
+  },
+  {
+    "name": "regulatory_reporting",
+    "displayName": "Regulatory Reporting",
+    "teamType": "Group",
+    "description": "Prepares and submits the bank's reports to the Central Bank of Uzbekistan."
+  },
+  {
+    "name": "core_banking",
+    "displayName": "Core Banking",
+    "teamType": "Group",
+    "description": "Runs iABS, the core banking system: customer master, accounts, the core ledger, payments and deposits. Owns the iabs source."
+  },
+  {
+    "name": "cards_and_lending",
+    "displayName": "Cards & Lending",
+    "teamType": "Group",
+    "description": "Runs TranzAxis, the retail credit and card engine: credit lines, microloans, cards and card transactions. Owns the tranzaxis source."
+  },
+  {
+    "name": "digital_banking",
+    "displayName": "Digital Banking",
+    "teamType": "Group",
+    "description": "Builds and runs the mobile banking app and its backend: app users, devices, KYC and logins. Owns the mobile source."
+  }
+]

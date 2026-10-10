@@ -1,0 +1,64 @@
+{
+  "kind": "databaseService",
+  "owner": "data_platform",
+  "service": {
+    "name": "greenplum",
+    "serviceType": "Greenplum",
+    "description": "The bank's data warehouse (Greenplum 6): PXF external tables over the source systems (ext__*), the operational data store (ods__*), marts (datamart), dictionaries and the regulatory marts (datamart_regtech). Built with dbt, orchestrated by Airflow, DDL by Liquibase.",
+    "connection": {
+      "config": {
+        "type": "Greenplum",
+        "username": "openmetadata",
+        "authType": { "password": "openmetadata" },
+        "hostPort": "greenplum:5432",
+        "database": "dwh"
+      }
+    }
+  },
+  "pipelines": [
+    {
+      "name": "greenplum_metadata",
+      "pipelineType": "metadata",
+      "stage": 1,
+      "schedule": "0 5 * * *",
+      "sourceConfig": {
+        "type": "DatabaseMetadata",
+        "includeViews": true,
+        "includeTags": true,
+        "includeDDL": true,
+        "schemaFilterPattern": { "includes": [ "^ext__", "^ods__", "^datamart", "^dictionary$" ] }
+      }
+    },
+    {
+      "name": "greenplum_dbt",
+      "pipelineType": "dbt",
+      "stage": 2,
+      "schedule": "15 * * * *",
+      "sourceConfig": {
+        "type": "DBT",
+        "dbtConfigSource": {
+          "dbtConfigType": "local",
+          "dbtManifestFilePath": "/opt/lab/dbt-state/catalog/manifest.json",
+          "dbtRunResultsFilePath": "/opt/lab/dbt-state/target/run_results.json"
+        },
+        "dbtUpdateDescriptions": true,
+        "dbtUpdateOwners": true,
+        "includeTags": true
+      }
+    },
+    {
+      "name": "greenplum_profiler",
+      "pipelineType": "profiler",
+      "stage": 4,
+      "schedule": "0 6 * * *",
+      "sourceConfig": {
+        "type": "Profiler",
+        "schemaFilterPattern": { "includes": [ "^ods__", "^datamart", "^dictionary$" ] },
+        "computeTableMetrics": true,
+        "computeColumnMetrics": true,
+        "threadCount": 2,
+        "timeoutSeconds": 3600
+      }
+    }
+  ]
+}

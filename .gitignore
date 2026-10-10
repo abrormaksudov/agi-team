@@ -1,0 +1,9 @@
+.venv/
+.idea/
+__pycache__/
+.ruff_cache/
+.rumdl_cache/
+.pytest_cache/
+
+# secrets live on the deployment, never in git; templates are *.env.example
+.env

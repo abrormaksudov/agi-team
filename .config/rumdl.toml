@@ -1,0 +1,48 @@
+[global]
+disable = ["MD013"]
+extend-enable = ["MD060", "MD083", "MD084"]
+flavor = "standard"
+cache = false
+
+[MD003]
+style = "atx"
+
+[MD004]
+style = "dash"
+
+[MD029]
+style = "one"
+
+[MD033]
+table-allowed-elements = ["br"]
+
+[MD035]
+style = "---"
+
+[MD036]
+punctuation = ".,;:!?)"
+
+[MD046]
+style = "fenced"
+
+[MD048]
+style = "backtick"
+
+[MD049]
+style = "asterisk"
+
+[MD050]
+style = "asterisk"
+
+[MD055]
+style = "leading-and-trailing"
+
+[MD060]
+style = "aligned"
+max-width = 120
+
+[MD077]
+style = "aligned"
+
+[MD083]
+ignore-code-blocks = false

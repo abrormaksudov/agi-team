@@ -1,0 +1,99 @@
+# Based on OpenMetadata 2.0.5 docker-compose-postgres.yml (Apache-2.0, Collate).
+name: agi-catalog
+
+x-om-env: &om-env
+  DB_DRIVER_CLASS: org.postgresql.Driver
+  DB_SCHEME: postgresql
+  DB_HOST: postgresql
+  DB_PORT: 5432
+  ELASTICSEARCH_HOST: elasticsearch
+  SERVER_HOST_API_URL: http://openmetadata-server:8585/api
+  PIPELINE_SERVICE_CLIENT_ENDPOINT: http://ingestion:8080
+  AUTHORIZER_ADMIN_PRINCIPALS: "[admin:${OM_ADMIN_PASSWORD:?}]"
+  AUTHENTICATION_ENABLE_SELF_SIGNUP: "false"
+  FERNET_KEY: ${OM_FERNET_KEY:?}
+  RSA_PUBLIC_KEY_FILE_PATH: /keys/public_key.der
+  RSA_PRIVATE_KEY_FILE_PATH: /keys/private_key.der
+
+services:
+  postgresql:
+    image: docker.getcollate.io/openmetadata/postgresql:2.0.5
+    restart: unless-stopped
+    command: "--work_mem=10MB"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: psql -U postgres -tAc 'select 1' -d openmetadata_db
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+      xpack.security.enabled: "false"
+    volumes:
+      - search-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: "curl -s http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  keys:
+    image: docker.getcollate.io/openmetadata/postgresql:2.0.5
+    entrypoint: ["sh", "-ec"]
+    command:
+      - |
+        cd /keys
+        test -f private_key.der && exit 0
+        openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private.pem
+        openssl pkcs8 -topk8 -nocrypt -in private.pem -outform DER -out private_key.der
+        openssl rsa -in private.pem -pubout -outform DER -out public_key.der
+        rm private.pem
+        chown 1000:1000 private_key.der public_key.der
+        chmod 400 private_key.der
+    volumes:
+      - jwt-keys:/keys
+
+  execute-migrate-all:
+    image: docker.getcollate.io/openmetadata/server:2.0.5
+    command: "./bootstrap/openmetadata-ops.sh migrate"
+    environment: *om-env
+    volumes:
+      - jwt-keys:/keys:ro
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      keys:
+        condition: service_completed_successfully
+
+  openmetadata-server:
+    image: docker.getcollate.io/openmetadata/server:2.0.5
+    restart: unless-stopped
+    environment: *om-env
+    ports:
+      - "127.0.0.1:8585:8585"
+    volumes:
+      - jwt-keys:/keys:ro
+    depends_on:
+      execute-migrate-all:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8586/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  postgres-data:
+  search-data:
+  jwt-keys:

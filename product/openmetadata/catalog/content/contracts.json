@@ -1,0 +1,24 @@
+[
+  {
+    "name": "clients_id_xref_contract",
+    "displayName": "Customer identity hub — personal data contract",
+    "entity": "greenplum.dwh.datamart.clients_id_xref",
+    "owner": "data_platform",
+    "entityStatus": "Approved",
+    "description": "What consumers of `datamart.clients_id_xref` (one row per person, matched across iABS, TranzAxis and the mobile app by PINFL) can rely on, and the rules for using the personal data it holds.",
+    "termsOfUse": "## Terms of use: personal data\n\n`datamart.clients_id_xref` holds personal data of individuals (PINFL, last, first and middle name, date of birth). They are processed under the Law of the Republic of Uzbekistan \"On Personal Data\" and the bank's personal-data policy.\n\n- **Purpose limitation.** Use the table only to link a person's records across iABS, TranzAxis and the mobile app for credit risk, regulatory reporting, AML/KYC and customer service. Marketing use needs the customer's consent, recorded in iABS.\n- **Need to know.** Access is granted per role (`l3__datamart__bs`) on request to Data Platform with the business reason; access is reviewed quarterly.\n- **Minimise.** Select only the columns you need. For counts and analytics, join on `pinfl` and drop names and date of birth from the result; aggregates of fewer than 10 persons are not shared outside the team.\n- **No copies outside the perimeter.** Personal data of Uzbek citizens stays on servers inside Uzbekistan: no exports to personal devices, e-mail, external cloud services or AI tools outside the bank.\n- **Masking.** Columns tagged `PII.Sensitive` are masked in the catalog's sample data and profiles for users who are not owners.\n- **Count people by `pinfl`,** never by app account: one person may own several app accounts (`has_duplicate_app_accounts`).\n- **Incidents.** Suspected misuse or leakage is reported to Information Security the same day.",
+    "security": { "dataClassification": "Confidential — personal data" },
+    "sla": {
+      "refreshFrequency": { "interval": 1, "unit": "day" },
+      "maxLatency": { "value": 6, "unit": "hour" },
+      "availabilityTime": "06:00",
+      "timezone": "GMT+05:00 (Asia/Karachi)",
+      "retention": { "period": 5, "unit": "year" },
+      "columnName": "dwh_created_at"
+    },
+    "qualityExpectations": [
+      "greenplum.dwh.datamart.clients_id_xref.pinfl.datamart__clients_id_xref__not_null_pinfl",
+      "greenplum.dwh.datamart.clients_id_xref.pinfl.datamart__clients_id_xref__unique_pinfl"
+    ]
+  }
+]

@@ -73,6 +73,17 @@ services:
       retries: 6
       start_period: 300s
 
+  liquibase:
+    build: ./liquibase
+    image: agi-lab/liquibase:5.0.4
+    working_dir: /liquibase/changelog
+    entrypoint: ["sh", "deploy.sh"]
+    volumes:
+      - ./liquibase:/liquibase/changelog:ro
+    depends_on:
+      greenplum:
+        condition: service_healthy
+
 volumes:
   iabs-data:
   mobile-data:

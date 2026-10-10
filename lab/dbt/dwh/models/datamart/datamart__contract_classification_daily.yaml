@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: datamart__contract_classification_daily
+    description: >
+      The bank's daily classification of every open credit contract — the hub the regulatory overdue-loans report,
+      portfolio figures and risk metrics are built from. One row per contract and operating day. Rules, first match wins:
+      (1) overdue — any overdue principal or interest; (2) written_off — written off at 361 days past due;
+      (3) repaying_carried_balance — credit line repaying a balance carried past a statement, so interest accrues;
+      (4) interest_only — only interest outstanding; (5) principal_only — credit line drawn within its grace period, no
+      interest; (6) dormant — credit line with nothing drawn for over 90 days; (7) microloan_first_period — microloan
+      before its first installment; (8) performing — everything else. Two clocks: days_past_due (FIFO, from the oldest
+      unpaid slice; drives the overdue band) and consecutive_overdue_days (days the contract has stayed overdue without
+      a break). Stateful: each day reads its own previous day to carry the clocks. Amounts in tiyin.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: datamart__contract_classification_daily__one_class_per_contract_day
+          arguments:
+            combination_of_columns: [ "report_date", "contract_id" ]
+      - dbt_utils.expression_is_true:
+          name: datamart__contract_classification_daily__band_iff_overdue
+          arguments:
+            expression: "(classification = 'overdue') = (overdue_band is not null)"
+    columns:
+      - name: report_date
+        description: Operating day the classification is as of (end of day)
+        data_tests:
+          - not_null:
+              name: datamart__contract_classification_daily__not_null_report_date
+      - name: contract_id
+        description: TranzAxis contract
+        data_tests:
+          - not_null:
+              name: datamart__contract_classification_daily__not_null_contract_id
+      - name: client_id
+        description: TranzAxis client (borrower); datamart__clients_id_xref links it to the person
+      - name: contract_type
+        description: credit_line or microloan
+      - name: product_code
+        description: TranzAxis product code
+      - name: classification
+        description: Class of the contract on the day — see the rules in the table description
+        data_tests:
+          - not_null:
+              name: datamart__contract_classification_daily__not_null_classification
+          - accepted_values:
+              name: datamart__contract_classification_daily__accepted_values_classification
+              arguments:
+                values: [ "overdue", "written_off", "repaying_carried_balance", "interest_only", "principal_only",
+                          "dormant", "microloan_first_period", "performing" ]
+      - name: previous_classification
+        description: Class on the previous operating day; empty on the contract's first day
+      - name: days_in_classification
+        description: Consecutive days the contract has held its current class, including today
+      - name: days_past_due
+        description: >
+          FIFO days past due — calendar days since the due date of the oldest unpaid principal or interest slice.
+          A partial repayment that clears the oldest slice moves the clock forward.
+      - name: consecutive_overdue_days
+        description: >
+          Days the contract has been overdue without a break, including today; 0 when not overdue. Unlike
+          days_past_due it does not move back on partial repayments. Initialised from days_past_due on the first day.
+      - name: overdue_band
+        description: Overdue band of the regulatory report by days_past_due — 1_30, 31_60, 61_90, 91_180, 181_360, 361_730, 730_plus; empty when not overdue
+      - name: is_first_grace_period
+        description: True for a credit line still before the due date of its first statement
+      - name: principal_balance
+        description: Current (not overdue) principal, tiyin
+      - name: interest_balance
+        description: Accrued interest not yet due or paid, tiyin
+      - name: overdue_principal_balance
+        description: Overdue principal, tiyin
+      - name: overdue_interest_balance
+        description: Overdue interest, tiyin
+      - name: penalty_balance
+        description: Penalty interest receivable, tiyin
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: datamart__contract_classification_tech
+    description: >
+      Technical state of every open credit contract (credit lines and microloans) at the end of each operating day:
+      balances by account role, the FIFO overdue clock, last drawdown and repayment, the latest credit-line statement and
+      the first due date. Input to datamart__contract_classification_daily, which applies the classification rules.
+      Days past due follow FIFO: every transfer to an overdue account is a slice dated by its due date, repayments clear
+      the oldest slice first, and days past due count from the oldest slice still unpaid — the same clock TranzAxis uses
+      for its delinquency states. Amounts in tiyin. Loaded per operating day (report_date = the operating day).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: datamart__contract_classification_tech__unique_report_date_contract_id
+          arguments:
+            combination_of_columns: [ "report_date", "contract_id" ]
+      - dbt_utils.expression_is_true:
+          name: datamart__contract_classification_tech__days_past_due_not_negative
+          arguments:
+            expression: "days_past_due >= 0"
+    columns:
+      - name: report_date
+        description: Operating day the state is as of (end of day)
+        data_tests:
+          - not_null:
+              name: datamart__contract_classification_tech__not_null_report_date
+      - name: contract_id
+        description: TranzAxis contract
+        data_tests:
+          - not_null:
+              name: datamart__contract_classification_tech__not_null_contract_id
+      - name: client_id
+        description: TranzAxis client (borrower); datamart__clients_id_xref links it to the person
+      - name: contract_type
+        description: credit_line or microloan
+      - name: product_code
+        description: TranzAxis product, e.g. PL_CARD_49 (card credit line), ML_6M_54 (6-month microloan)
+      - name: contract_status
+        description: Contract status in TranzAxis — active, blocked (credit line frozen after 30 days past due), written_off
+      - name: open_date
+        description: Contract opening date
+      - name: principal_balance
+        description: Current (not overdue) principal, tiyin
+      - name: interest_balance
+        description: Accrued interest not yet due or paid, tiyin
+      - name: overdue_principal_balance
+        description: Principal past its due date and unpaid, tiyin (balance accounts 16400 / 16410)
+      - name: overdue_interest_balance
+        description: Interest past its due date and unpaid, tiyin (balance accounts 16600 / 16610)
+      - name: penalty_balance
+        description: Penalty interest on overdue principal, tiyin (0.05% a day, accrued at month end)
+      - name: written_off_principal
+        description: Principal written off at 361 days past due, held off-balance, tiyin
+      - name: written_off_interest
+        description: Interest written off together with the principal, tiyin
+      - name: unused_limit
+        description: Undrawn part of a credit line's limit, tiyin (off-balance commitment)
+      - name: oldest_unpaid_principal_date
+        description: Due date of the oldest overdue principal slice still unpaid (FIFO)
+      - name: oldest_unpaid_interest_date
+        description: Due date of the oldest overdue interest slice still unpaid (FIFO)
+      - name: days_past_due_principal
+        description: Calendar days since oldest_unpaid_principal_date
+      - name: days_past_due_interest
+        description: Calendar days since oldest_unpaid_interest_date
+      - name: days_past_due
+        description: Calendar days since the oldest unpaid slice of principal or interest; 0 when nothing is overdue
+      - name: last_draw_date
+        description: Last day principal was drawn (credit line purchase or microloan disbursement)
+      - name: last_repayment_date
+        description: Last day the borrower repaid anything (write-off days excluded)
+      - name: first_due_date
+        description: First installment due date (microloan) or first statement due date (credit line)
+      - name: statement_date
+        description: Latest credit-line statement date on or before the report date
+      - name: statement_due_date
+        description: Due date of that statement (statement date + 20 days of grace)
+      - name: statement_min_payment
+        description: Minimum payment of that statement, tiyin
+      - name: statement_paid_amount
+        description: Amount paid against that statement so far, tiyin
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

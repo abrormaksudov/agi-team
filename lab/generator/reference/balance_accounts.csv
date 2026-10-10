@@ -1,0 +1,62 @@
+code,name,class,section,side,is_contra,product_hint
+10100,Cash in vault - national currency (UZS),asset,cash,active,false,cash
+10200,Cash in vault - foreign currency,asset,cash,active,false,cash
+10300,Cash in ATMs - national currency (UZS),asset,cash,active,false,cash
+10400,Cash in ATMs - foreign currency,asset,cash,active,false,cash
+10600,Correspondent account at the Central Bank - national currency,asset,correspondent_accounts,active,false,nostro
+10700,Nostro accounts with foreign banks,asset,correspondent_accounts,active,false,nostro
+16100,Revolving consumer credit lines to individuals - principal,asset,loans_individuals,active,false,credit_line
+16110,Card-linked consumer credit lines to individuals - principal,asset,loans_individuals,active,false,credit_line
+16200,Microloans to individuals - principal,asset,loans_individuals,active,false,microloan
+16400,Overdue principal - credit lines to individuals,asset,overdue_loans,active,false,credit_line
+16410,Overdue principal - microloans to individuals,asset,overdue_loans,active,false,microloan
+16500,Accrued interest receivable - credit lines,asset,accrued_interest,active,false,credit_line
+16510,Accrued interest receivable - microloans,asset,accrued_interest,active,false,microloan
+16600,Overdue interest receivable - credit lines,asset,overdue_interest,active,false,credit_line
+16610,Overdue interest receivable - microloans,asset,overdue_interest,active,false,microloan
+16700,Penalties receivable on overdue consumer loans,asset,penalties,active,false,general
+16800,Restructured consumer loans - principal,asset,loans_individuals,active,false,general
+16900,Consumer loans in litigation - principal,asset,overdue_loans,active,false,general
+18200,Transit and suspense account - debit balances,asset,transit_suspense,active,false,general
+18300,Card settlements receivable from processing centres (Humo/Uzcard),asset,card_settlements,active,false,card
+19100,Provision for loan principal - credit lines,asset,provisions,passive,true,credit_line
+19110,Provision for loan principal - microloans,asset,provisions,passive,true,microloan
+19200,Provision for accrued interest receivable,asset,provisions,passive,true,general
+19210,Provision for overdue interest receivable,asset,provisions,passive,true,general
+20100,Demand deposits of individuals - current accounts (UZS),liability,deposits_demand,passive,false,deposit_demand
+20110,Demand deposits of individuals - current accounts (FX),liability,deposits_demand,passive,false,deposit_demand
+20200,Demand deposits of legal entities - settlement accounts (UZS),liability,deposits_demand,passive,false,deposit_demand
+20500,Card accounts of individuals (UZS),liability,card_accounts,passive,false,card
+20510,Card accounts of individuals (FX),liability,card_accounts,passive,false,card
+21100,Term deposits of individuals (UZS),liability,deposits_term,passive,false,deposit_term
+21110,Term deposits of individuals (FX),liability,deposits_term,passive,false,deposit_term
+21300,Savings deposits of individuals (UZS),liability,deposits_term,passive,false,deposit_term
+21310,Savings deposits of individuals (FX),liability,deposits_term,passive,false,deposit_term
+22100,Accrued interest payable on deposits of individuals,liability,accrued_interest,passive,false,deposit_term
+20900,Card settlements payable to merchants (Humo/Uzcard),liability,card_settlements,passive,false,card
+29100,Transit and suspense account - credit balances,liability,other_liabilities,passive,false,general
+30100,Share capital - ordinary shares,equity,capital,passive,false,general
+30300,Reserve fund,equity,capital,passive,false,general
+30400,Retained earnings,equity,retained_earnings,passive,false,general
+30500,Current-year profit or loss,equity,retained_earnings,passive,false,general
+41100,Interest income - revolving and card-linked credit lines to individuals,income,interest_income,passive,false,credit_line
+41110,Interest income - microloans to individuals,income,interest_income,passive,false,microloan
+41200,Interest income - correspondent and nostro accounts,income,interest_income,passive,false,nostro
+41300,Penalty income on overdue consumer loans,income,penalties,passive,false,general
+42100,Fee and commission income - card services,income,fee_income,passive,false,card
+42200,Fee and commission income - money transfers,income,fee_income,passive,false,fee
+42300,Fee and commission income - account maintenance,income,fee_income,passive,false,fee
+50100,Interest expense - demand deposits of individuals,expense,interest_expense,active,false,deposit_demand
+50200,Interest expense - term deposits of individuals (UZS),expense,interest_expense,active,false,deposit_term
+50210,Interest expense - term deposits of individuals (FX),expense,interest_expense,active,false,deposit_term
+50300,Interest expense - savings deposits of individuals,expense,interest_expense,active,false,deposit_term
+51100,Provision expense - loan principal,expense,provision_expense,active,false,general
+51200,Provision expense - accrued and overdue interest,expense,provision_expense,active,false,general
+52100,Loss on written-off consumer loans - principal,expense,written_off,active,false,written_off
+53100,Staff salaries and bonuses,expense,operating_expense,active,false,general
+53200,Premises rent,expense,operating_expense,active,false,general
+53300,IT services and software licences,expense,operating_expense,active,false,general
+91000,Written-off consumer loans - principal (memorandum),off_balance,written_off,active,false,written_off
+91010,Written-off consumer loans - interest (memorandum),off_balance,written_off,active,false,written_off
+92100,Unused limits on revolving and card-linked credit lines (commitments),off_balance,commitments,active,false,credit_line
+93100,Collateral received for consumer loans (appraised value),off_balance,collateral,active,false,general

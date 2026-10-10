@@ -1,0 +1,74 @@
+mcc,description,category_group,is_cash_like,is_high_risk,spend_weight,avg_amount_uzs
+5411,Grocery stores and supermarkets,grocery,false,false,20,85000
+5462,Bakeries,grocery,false,false,2.0,25000
+5499,Miscellaneous food stores convenience stores and markets,grocery,false,false,6.0,40000
+5300,Wholesale clubs,grocery,false,false,0.8,300000
+5812,Eating places and restaurants,food_service,false,false,6.0,120000
+5814,Fast food restaurants,food_service,false,false,4.0,45000
+5813,Bars taverns and cocktail lounges,food_service,false,false,1.0,90000
+5811,Caterers,food_service,false,false,0.3,400000
+5541,Service stations,fuel,false,false,4.0,200000
+5542,Automated fuel dispensers,fuel,false,false,1.5,150000
+5912,Drug stores and pharmacies,health,false,false,3.0,60000
+8011,Doctors and physicians,health,false,false,0.8,150000
+8021,Dentists and orthodontists,health,false,false,0.6,300000
+8062,Hospitals,health,false,false,0.3,1200000
+8099,Medical services and health practitioners NEC,health,false,false,0.4,150000
+8043,Opticians,health,false,false,0.2,200000
+8071,Medical and dental laboratories,health,false,false,0.2,180000
+5651,Family clothing stores,apparel,false,false,1.5,250000
+5691,Mens and womens clothing stores,apparel,false,false,1.8,300000
+5699,Miscellaneous apparel and accessory shops,apparel,false,false,0.8,200000
+5661,Shoe stores,apparel,false,false,0.7,220000
+5621,Womens ready-to-wear stores,apparel,false,false,0.4,350000
+5732,Electronics stores,electronics,false,false,0.8,1500000
+5722,Household appliance stores,electronics,false,false,0.2,2500000
+5734,Computer software stores,electronics,false,false,0.2,200000
+4812,Telecommunication equipment and telephone sales,telecom,false,false,0.3,800000
+4814,Telecommunication services and mobile top-up,telecom,false,false,2.5,50000
+4899,Cable satellite and pay television services,telecom,false,false,0.8,50000
+4900,Utilities electric gas water and sanitary,utilities,false,false,3.0,350000
+4121,Taxicabs and limousines and ride-hailing,transport,false,false,14.0,25000
+4111,Local and suburban commuter transport and ferries,transport,false,false,3.0,4000
+4131,Bus lines,transport,false,false,0.5,6000
+4215,Courier services,transport,false,false,0.8,40000
+7523,Parking lots and garages,transport,false,false,0.8,8000
+7538,Automotive service shops,transport,false,false,0.5,400000
+7531,Automotive body repair shops,transport,false,false,0.2,800000
+7542,Car washes,transport,false,false,0.6,30000
+5533,Automotive parts and accessories stores,transport,false,false,0.3,200000
+5511,Car and truck dealers new and used,transport,false,false,0.05,150000000
+4511,Airlines and air carriers,travel,false,false,0.3,2500000
+3000,Airline-specific range representative code,travel,false,false,0.1,2500000
+4722,Travel agencies and tour operators,travel,false,false,0.2,2000000
+7011,Hotels motels and resorts,travel,false,false,0.4,900000
+5399,Miscellaneous general merchandise and online marketplaces,online_retail,false,false,3.0,150000
+5969,Direct marketing and online marketplaces,online_retail,false,false,1.5,180000
+5331,Variety stores,other,false,false,1.2,60000
+5311,Department stores,other,false,false,1.5,300000
+5999,Miscellaneous and specialty retail stores,other,false,false,1.0,150000
+5200,Home supply warehouse stores,other,false,false,0.6,300000
+5251,Hardware stores,other,false,false,0.5,150000
+5977,Cosmetic stores,other,false,false,0.7,120000
+7230,Barber and beauty shops,other,false,false,0.8,80000
+7298,Health and beauty spas,other,false,false,0.2,300000
+7997,Membership clubs sports recreation and gyms,other,false,false,0.3,250000
+7996,Amusement parks carnivals and circuses,other,false,false,0.3,100000
+7832,Motion picture theaters,other,false,false,0.4,80000
+8220,Colleges and universities,education,false,false,0.6,4000000
+8211,Elementary and secondary schools,education,false,false,0.5,1500000
+8299,Schools and educational services NEC,education,false,false,0.8,500000
+6011,Financial institutions ATM cash withdrawal,cash,true,false,8.0,500000
+6010,Financial institutions manual cash disbursement,cash,true,false,1.0,400000
+6051,Quasi-cash foreign currency and crypto purchases,cash,true,true,0.2,1000000
+6012,Financial institutions merchandise and money transfer,transfers,true,false,0.8,300000
+4829,Money transfer and wire transfer,transfers,true,true,0.3,1500000
+7995,Betting lottery and casino gaming chips,gambling,false,true,0.3,50000
+9399,Government services NEC,government,false,false,1.5,150000
+9311,Tax payments,government,false,false,0.5,500000
+9222,Fines,government,false,false,0.1,300000
+6300,Insurance sales underwriting and premiums,insurance,false,false,0.8,300000
+5815,Digital goods media books movies and music,digital,false,false,0.5,40000
+5816,Digital goods games,digital,false,false,0.8,60000
+5817,Digital goods applications excluding games,digital,false,false,0.8,40000
+5818,Digital goods large digital merchant,digital,false,false,0.4,100000

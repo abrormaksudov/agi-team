@@ -12,3 +12,7 @@ dev = [
     "ruff>=0.16.10",
     "rumdl>=0.2.78",
 ]
+generator = [
+    "numpy>=2.5.3",
+    "polars>=2.0.0",
+]

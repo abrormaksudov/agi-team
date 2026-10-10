@@ -1,0 +1,21 @@
+holiday_date,name,is_non_working
+2025-01-01,New Year Day,true
+2025-01-14,Defenders Day,false
+2025-03-08,International Women's Day,true
+2025-03-21,Navruz,true
+2025-03-30,Ramadan Hayit (Eid al-Fitr) estimated,true
+2025-05-09,Remembrance Day,true
+2025-06-06,Qurbon Hayit (Eid al-Adha) estimated,true
+2025-09-01,Independence Day,true
+2025-10-01,Teachers' Day,true
+2025-12-08,Constitution Day,true
+2026-01-01,New Year Day,true
+2026-01-14,Defenders Day,false
+2026-03-08,International Women's Day,true
+2026-03-20,Ramadan Hayit (Eid al-Fitr) estimated,true
+2026-03-21,Navruz,true
+2026-05-09,Remembrance Day,true
+2026-05-27,Qurbon Hayit (Eid al-Adha) estimated,true
+2026-09-01,Independence Day,true
+2026-10-01,Teachers' Day,true
+2026-12-08,Constitution Day,true

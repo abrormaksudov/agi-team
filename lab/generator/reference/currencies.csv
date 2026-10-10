@@ -1,0 +1,8 @@
+currency_code,numeric_code,name,minor_units,start_rate_uzs,daily_volatility_pct
+UZS,860,Uzbekistan sum,2,1,0.00
+USD,840,US dollar,2,12650.00,0.15
+EUR,978,Euro,2,14670.00,0.25
+RUB,643,Russian ruble,2,140.00,0.60
+KZT,398,Kazakhstani tenge,2,24.50,0.35
+CNY,156,Chinese yuan renminbi,2,1780.00,0.10
+GBP,826,Pound sterling,2,16900.00,0.30

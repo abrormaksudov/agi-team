@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: ods__iabs__customer_individual
+    description: >
+      iABS personal data of individual customers: one row per individual, matched to ods__iabs__customer
+      by customer_code. Holds personal data (PINFL, names, birth date, passport, address, phone, income),
+      current state only. Full reload from the source every operating day. Income in tiyin (1/100 UZS).
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__customer_individual__equal_row_count
+          arguments:
+            compare_model: source("iabs", "customer_individual")
+    columns:
+      - name: customer_code
+        description: 8-digit customer code, same as ods__iabs__customer.customer_code; one row per individual
+        data_tests:
+          - not_null:
+              name: ods__iabs__customer_individual__not_null_customer_code
+          - unique:
+              name: ods__iabs__customer_individual__unique_customer_code
+          - relationships:
+              name: ods__iabs__customer_individual__relationships_customer_code
+              arguments:
+                to: ref("ods__iabs__customer")
+                field: customer_code
+              config:
+                severity: warn
+      - name: pinfl
+        description: Personal data. PINFL, the 14-digit personal identification number of the individual; the identity bridge to the mobile app and TranzAxis.
+        data_tests:
+          - not_null:
+              name: ods__iabs__customer_individual__not_null_pinfl
+      - name: last_name
+        description: Personal data. Family name, Latin script.
+      - name: first_name
+        description: Personal data. Given name, Latin script.
+      - name: middle_name
+        description: Personal data. Patronymic in Uzbek form (o'g'li for a son, qizi for a daughter); empty when none is recorded.
+      - name: birth_date
+        description: Personal data. Date of birth.
+        data_tests:
+          - not_null:
+              name: ods__iabs__customer_individual__not_null_birth_date
+      - name: gender
+        description: Gender, F (female) or M (male).
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__customer_individual__accepted_values_gender
+              arguments:
+                values: [ "F", "M" ]
+      - name: passport_series
+        description: Personal data. Two-letter passport series, for example AB or AD.
+      - name: passport_number
+        description: Personal data. 7-digit passport number.
+      - name: passport_issued
+        description: Personal data. Date the current passport was issued.
+      - name: district_code
+        description: 7-digit code of the district of residence (ods__iabs__district.district_code).
+      - name: address
+        description: Personal data. Residential address, free text (street, house, flat).
+      - name: phone
+        description: Personal data. Mobile phone in the form +998 followed by 9 digits.
+      - name: monthly_income
+        description: Personal data. Declared monthly income in tiyin (1/100 UZS).
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

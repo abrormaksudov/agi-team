@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: ods__iabs__district
+    description: >
+      Administrative districts of Uzbekistan from the iABS reference data, one row per district. Reference
+      data that changes rarely. Full reload from the source every operating day. Joins to ods__iabs__region on
+      region_code; a customer's district is district_code of ods__iabs__customer_individual.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__district__equal_row_count
+          arguments:
+            compare_model: source("iabs", "district")
+    columns:
+      - name: district_code
+        description: 7-digit SOATO-style district code; its first four digits are the region_code.
+        data_tests:
+          - not_null:
+              name: ods__iabs__district__not_null_district_code
+          - unique:
+              name: ods__iabs__district__unique_district_code
+      - name: region_code
+        description: Region the district belongs to (ods__iabs__region.region_code).
+        data_tests:
+          - not_null:
+              name: ods__iabs__district__not_null_region_code
+          - relationships:
+              name: ods__iabs__district__relationships_region_code
+              arguments:
+                to: ref("ods__iabs__region")
+                field: region_code
+              config:
+                severity: warn
+      - name: district_name
+        description: District name in English transliteration.
+      - name: is_city
+        description: True for city districts, false for rural districts.
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

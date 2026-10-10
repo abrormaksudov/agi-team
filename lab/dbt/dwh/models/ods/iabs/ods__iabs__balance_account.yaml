@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: ods__iabs__balance_account
+    description: >
+      Chart of balance accounts used by iABS: 5-digit CBU-style codes, one row per balance account. Reference
+      data that changes rarely. Full reload from the source every operating day. Joins to ods__iabs__account
+      on balance_account, the first five digits of the account number.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__balance_account__equal_row_count
+          arguments:
+            compare_model: source("iabs", "balance_account")
+    columns:
+      - name: code
+        description: "5-digit balance account code (CBU style); the first digit is the class: 1 assets, 2 liabilities, 3 equity, 4 income, 5 expenses, 9 off-balance."
+        data_tests:
+          - not_null:
+              name: ods__iabs__balance_account__not_null_code
+          - unique:
+              name: ods__iabs__balance_account__unique_code
+      - name: name
+        description: Account name in English.
+      - name: account_class
+        description: "Class of the account: asset, liability, equity, income, expense or off_balance."
+        data_tests:
+          - not_null:
+              name: ods__iabs__balance_account__not_null_account_class
+          - accepted_values:
+              name: ods__iabs__balance_account__accepted_values_account_class
+              arguments:
+                values: [ "asset", "liability", "equity", "income", "expense", "off_balance" ]
+      - name: section
+        description: Reporting section that groups the accounts, for example loans_individuals or deposits_demand.
+        data_tests:
+          - not_null:
+              name: ods__iabs__balance_account__not_null_section
+          - accepted_values:
+              name: ods__iabs__balance_account__accepted_values_section
+              arguments:
+                values: [ "accrued_interest", "capital", "card_accounts", "card_settlements", "cash", "collateral", "commitments", "correspondent_accounts", "deposits_demand", "deposits_term", "fee_income", "interest_expense", "interest_income", "loans_individuals", "operating_expense", "other_liabilities", "overdue_interest", "overdue_loans", "penalties", "provision_expense", "provisions", "retained_earnings", "transit_suspense", "written_off" ]
+      - name: side
+        description: "Normal balance side: active (debit) or passive (credit). Contra provisions are passive although they sit among assets."
+        data_tests:
+          - not_null:
+              name: ods__iabs__balance_account__not_null_side
+          - accepted_values:
+              name: ods__iabs__balance_account__accepted_values_side
+              arguments:
+                values: [ "active", "passive" ]
+      - name: is_contra
+        description: True for contra accounts, which reduce a related asset, such as loan loss provisions.
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

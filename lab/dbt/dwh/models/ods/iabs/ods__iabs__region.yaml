@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: ods__iabs__region
+    description: >
+      Regions of Uzbekistan from the iABS reference data: the 12 provinces, Tashkent city and the Republic of
+      Karakalpakstan, one row each. Reference data that changes rarely. Full reload from the source every
+      operating day. Joins to ods__iabs__district and ods__iabs__branch on region_code.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__region__equal_row_count
+          arguments:
+            compare_model: source("iabs", "region")
+    columns:
+      - name: region_code
+        description: 4-digit region code; the first four digits of every district code in ods__iabs__district.
+        data_tests:
+          - not_null:
+              name: ods__iabs__region__not_null_region_code
+          - unique:
+              name: ods__iabs__region__unique_region_code
+      - name: region_name
+        description: Region name in English, for example Tashkent city or Republic of Karakalpakstan.
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

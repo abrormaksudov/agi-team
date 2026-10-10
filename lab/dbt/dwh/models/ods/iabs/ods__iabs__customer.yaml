@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: ods__iabs__customer
+    description: >
+      iABS customer master: one row per customer, individuals and legal entities, current state.
+      Full reload from the source every operating day. Personal data of individuals lives in
+      ods__iabs__customer_individual, of companies in ods__iabs__customer_company (joined by customer_code).
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__customer__equal_row_count
+          arguments:
+            compare_model: source("iabs", "customer")
+    columns:
+      - name: customer_id
+        description: Internal customer identifier in iABS
+        data_tests:
+          - not_null:
+              name: ods__iabs__customer__not_null_customer_id
+          - unique:
+              name: ods__iabs__customer__unique_customer_id
+      - name: customer_code
+        description: 8-digit customer code; part of every account number of the customer (positions 10–17)
+        data_tests:
+          - not_null:
+              name: ods__iabs__customer__not_null_customer_code
+          - unique:
+              name: ods__iabs__customer__unique_customer_code
+      - name: customer_type
+        description: individual or legal entity
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__customer__accepted_values_customer_type
+              arguments:
+                values: [ "individual", "company" ]
+      - name: tax_id
+        description: Taxpayer identification number (INN), 9 digits
+      - name: branch_code
+        description: 5-digit code of the servicing branch (MFO)
+      - name: status
+        description: Customer status in iABS
+      - name: open_date
+        description: Date the customer was registered in iABS
+      - name: close_date
+        description: Date the customer was closed; empty while active
+      - name: updated_at
+        description: Last change of the row in iABS
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

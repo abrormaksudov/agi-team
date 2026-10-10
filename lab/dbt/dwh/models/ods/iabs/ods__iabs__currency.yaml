@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: ods__iabs__currency
+    description: >
+      Currencies known to iABS, one row per currency with its ISO 4217 codes, name and minor units. Reference
+      data that changes rarely. Full reload from the source every operating day. Joins to
+      ods__iabs__exchange_rate and to ods__iabs__account on currency_code.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__currency__equal_row_count
+          arguments:
+            compare_model: source("iabs", "currency")
+    columns:
+      - name: currency_numeric
+        description: ISO 4217 numeric code, for example 860 for UZS; account numbers use 000 for UZS instead.
+        data_tests:
+          - not_null:
+              name: ods__iabs__currency__not_null_currency_numeric
+          - unique:
+              name: ods__iabs__currency__unique_currency_numeric
+      - name: currency_code
+        description: ISO 4217 three-letter code, for example UZS or USD; the key used by accounts and exchange rates.
+        data_tests:
+          - not_null:
+              name: ods__iabs__currency__not_null_currency_code
+          - accepted_values:
+              name: ods__iabs__currency__accepted_values_currency_code
+              arguments:
+                values: [ "UZS", "USD", "EUR", "RUB", "KZT", "CNY", "GBP" ]
+      - name: currency_name
+        description: Currency name in English.
+      - name: minor_units
+        description: Number of decimal places of the currency, 2 for every currency in the reference data.
+        data_tests:
+          - not_null:
+              name: ods__iabs__currency__not_null_minor_units
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

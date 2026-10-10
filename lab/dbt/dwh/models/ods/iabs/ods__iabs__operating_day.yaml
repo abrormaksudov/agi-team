@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: ods__iabs__operating_day
+    description: >
+      Business-day calendar of the bank: one row per calendar day with the previous and next operating day.
+      The bank closes every calendar day, weekends and public holidays included, so prev_oper_day and
+      next_oper_day are the day before and after; is_weekend and is_holiday flag those days.
+      Reference data. Full reload from the source every operating day. The oper_day columns of the other
+      tables refer to this calendar.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__operating_day__equal_row_count
+          arguments:
+            compare_model: source("iabs", "operating_day")
+    columns:
+      - name: oper_day
+        description: Calendar date of the operating day; the primary key.
+        data_tests:
+          - not_null:
+              name: ods__iabs__operating_day__not_null_oper_day
+          - unique:
+              name: ods__iabs__operating_day__unique_oper_day
+      - name: prev_oper_day
+        description: Previous operating day, the calendar day before.
+        data_tests:
+          - not_null:
+              name: ods__iabs__operating_day__not_null_prev_oper_day
+      - name: next_oper_day
+        description: Next operating day, the calendar day after.
+        data_tests:
+          - not_null:
+              name: ods__iabs__operating_day__not_null_next_oper_day
+      - name: is_holiday
+        description: True on public holidays, also when they fall on a weekend.
+        data_tests:
+          - not_null:
+              name: ods__iabs__operating_day__not_null_is_holiday
+      - name: is_weekend
+        description: True on Saturdays and Sundays.
+        data_tests:
+          - not_null:
+              name: ods__iabs__operating_day__not_null_is_weekend
+      - name: day_status
+        description: "Status of the day: open while business is running, closed after the end-of-day close."
+        data_tests:
+          - not_null:
+              name: ods__iabs__operating_day__not_null_day_status
+          - accepted_values:
+              name: ods__iabs__operating_day__accepted_values_day_status
+              arguments:
+                values: [ "open", "closed" ]
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

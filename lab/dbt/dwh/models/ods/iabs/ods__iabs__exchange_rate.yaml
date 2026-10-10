@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: ods__iabs__exchange_rate
+    description: >
+      Official exchange rates of the Central Bank of Uzbekistan (CBU) for foreign currencies, one row per
+      currency and rate date. A rate is UZS per nominal units of the currency; nominal is 1 for every currency
+      in the data, so the rate is UZS per one unit. Rates are decimal sums, not tiyin. Reference data. Full
+      reload from the source every operating day. Joins to ods__iabs__currency on currency_code;
+      ods__iabs__account_balance converts balances at the rate of the day.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: ods__iabs__exchange_rate__unique_currency_code_rate_date
+          arguments:
+            combination_of_columns: [ "currency_code", "rate_date" ]
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__exchange_rate__equal_row_count
+          arguments:
+            compare_model: source("iabs", "exchange_rate")
+    columns:
+      - name: currency_numeric
+        description: ISO 4217 numeric code of the currency.
+      - name: currency_code
+        description: "ISO 4217 code of the foreign currency: USD, EUR, RUB, KZT, CNY or GBP; part of the primary key."
+        data_tests:
+          - not_null:
+              name: ods__iabs__exchange_rate__not_null_currency_code
+          - accepted_values:
+              name: ods__iabs__exchange_rate__accepted_values_currency_code
+              arguments:
+                values: [ "USD", "EUR", "RUB", "KZT", "CNY", "GBP" ]
+          - relationships:
+              name: ods__iabs__exchange_rate__relationships_currency_code
+              arguments:
+                to: ref("ods__iabs__currency")
+                field: currency_code
+              config:
+                severity: warn
+      - name: rate_date
+        description: Calendar date the rate applies to; part of the primary key.
+        data_tests:
+          - not_null:
+              name: ods__iabs__exchange_rate__not_null_rate_date
+      - name: rate
+        description: "Official CBU rate: UZS per nominal units of the currency, a decimal amount in sums."
+        data_tests:
+          - not_null:
+              name: ods__iabs__exchange_rate__not_null_rate
+      - name: nominal
+        description: Number of currency units the rate refers to; 1 for every currency in the data.
+        data_tests:
+          - not_null:
+              name: ods__iabs__exchange_rate__not_null_nominal
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

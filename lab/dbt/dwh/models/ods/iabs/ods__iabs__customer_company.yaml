@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: ods__iabs__customer_company
+    description: >
+      iABS legal entities: one row per company, matched to ods__iabs__customer by customer_code. Holds the
+      company's registration, sector and director (the director's name and PINFL are personal data).
+      Current state only. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__customer_company__equal_row_count
+          arguments:
+            compare_model: source("iabs", "customer_company")
+    columns:
+      - name: customer_code
+        description: 8-digit customer code, same as ods__iabs__customer.customer_code; one row per company
+        data_tests:
+          - not_null:
+              name: ods__iabs__customer_company__not_null_customer_code
+          - unique:
+              name: ods__iabs__customer_company__unique_customer_code
+          - relationships:
+              name: ods__iabs__customer_company__relationships_customer_code
+              arguments:
+                to: ref("ods__iabs__customer")
+                field: customer_code
+              config:
+                severity: warn
+      - name: company_name
+        description: Name of the legal entity, including its legal form abbreviation at the end.
+      - name: registration_date
+        description: Date the company was registered.
+      - name: oked_code
+        description: 5-digit OKED code of the main economic activity (sector).
+      - name: legal_form
+        description: Legal form abbreviation used in the company name; MChJ (limited liability company), AJ (joint-stock company), XK (private enterprise) or OK.
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__customer_company__accepted_values_legal_form
+              arguments:
+                values: [ "MChJ", "AJ", "XK", "OK" ]
+      - name: director_name
+        description: Personal data. Full name of the director, Latin script.
+      - name: director_pinfl
+        description: Personal data. PINFL, the 14-digit personal identification number of the director.
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

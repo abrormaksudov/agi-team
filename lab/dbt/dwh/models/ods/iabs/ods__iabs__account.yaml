@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: ods__iabs__account
+    description: >
+      iABS accounts: one row per account, current state (open or closed). Card, current FX, deposit and
+      settlement accounts. The 20-digit account number carries the balance account, currency, check digit
+      and owner's customer code. Full reload from the source every operating day. Daily balances are in
+      ods__iabs__account_balance; term deposits in ods__iabs__deposit_contract.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__account__equal_row_count
+          arguments:
+            compare_model: source("iabs", "account")
+    columns:
+      - name: account_id
+        description: Internal account identifier in iABS; one row per account
+        data_tests:
+          - not_null:
+              name: ods__iabs__account__not_null_account_id
+          - unique:
+              name: ods__iabs__account__unique_account_id
+      - name: account_number
+        description: 20-digit account number. Positions 1-5 balance account, 6-8 currency (000 for UZS), 9 check digit, 10-17 owner's customer code, 18-20 sequence.
+        data_tests:
+          - not_null:
+              name: ods__iabs__account__not_null_account_number
+      - name: balance_account
+        description: 5-digit balance account from the chart of accounts. 20500 card accounts of individuals (UZS), 20110 current accounts of individuals (FX), 20200 settlement accounts of legal entities (UZS), 21100 term deposits of individuals (UZS), 21110 term deposits of individuals (FX).
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__account__accepted_values_balance_account
+              arguments:
+                values: [ "20110", "20200", "20500", "21100", "21110" ]
+      - name: currency_code
+        description: Currency of the account, ISO code; UZS or USD.
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__account__accepted_values_currency_code
+              arguments:
+                values: [ "UZS", "USD" ]
+      - name: customer_code
+        description: Owner's 8-digit customer code (ods__iabs__customer.customer_code), the same digits as positions 10-17 of account_number.
+        data_tests:
+          - not_null:
+              name: ods__iabs__account__not_null_customer_code
+          - relationships:
+              name: ods__iabs__account__relationships_customer_code
+              arguments:
+                to: ref("ods__iabs__customer")
+                field: customer_code
+              config:
+                severity: warn
+      - name: account_type
+        description: Product type of the account; card (bank card), current_fx (foreign-currency current account), deposit (term-deposit account) or settlement (settlement account).
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__account__accepted_values_account_type
+              arguments:
+                values: [ "card", "current_fx", "deposit", "settlement" ]
+      - name: status
+        description: Account status; open while in use, closed after the account was closed.
+        data_tests:
+          - not_null:
+              name: ods__iabs__account__not_null_status
+          - accepted_values:
+              name: ods__iabs__account__accepted_values_status
+              arguments:
+                values: [ "open", "closed" ]
+      - name: open_date
+        description: Date the account was opened.
+        data_tests:
+          - not_null:
+              name: ods__iabs__account__not_null_open_date
+      - name: close_date
+        description: Date the account was closed; empty while the account is open.
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

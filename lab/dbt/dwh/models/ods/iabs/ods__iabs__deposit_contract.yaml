@@ -1,0 +1,84 @@
+version: 2
+
+models:
+  - name: ods__iabs__deposit_contract
+    description: >
+      iABS term deposit contracts: one row per contract, current state (active, closed or closed_early).
+      Amounts in minor units of the currency (tiyin for UZS); interest_rate is the annual rate in percent.
+      The deposit's own account is in account_number (joins to ods__iabs__account). Full reload from the
+      source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__deposit_contract__equal_row_count
+          arguments:
+            compare_model: source("iabs", "deposit_contract")
+    columns:
+      - name: deposit_id
+        description: Internal identifier of the deposit contract in iABS; one row per contract
+        data_tests:
+          - not_null:
+              name: ods__iabs__deposit_contract__not_null_deposit_id
+          - unique:
+              name: ods__iabs__deposit_contract__unique_deposit_id
+      - name: contract_number
+        description: Contract number as printed on the contract, TD- followed by the deposit_id.
+      - name: customer_code
+        description: Depositor's 8-digit customer code (ods__iabs__customer.customer_code).
+        data_tests:
+          - not_null:
+              name: ods__iabs__deposit_contract__not_null_customer_code
+          - relationships:
+              name: ods__iabs__deposit_contract__relationships_customer_code
+              arguments:
+                to: ref("ods__iabs__customer")
+                field: customer_code
+              config:
+                severity: warn
+      - name: deposit_type
+        description: Term of the deposit; term_6m, term_12m or term_18m months.
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__deposit_contract__accepted_values_deposit_type
+              arguments:
+                values: [ "term_6m", "term_12m", "term_18m" ]
+      - name: currency_code
+        description: Currency of the deposit, ISO code; UZS or USD.
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__deposit_contract__accepted_values_currency_code
+              arguments:
+                values: [ "UZS", "USD" ]
+      - name: amount
+        description: Principal of the deposit in minor units of the currency (tiyin for UZS, cents for USD).
+        data_tests:
+          - not_null:
+              name: ods__iabs__deposit_contract__not_null_amount
+      - name: interest_rate
+        description: Annual interest rate in percent; 22.5 means 22.5 percent a year.
+      - name: start_date
+        description: Date the deposit was opened.
+        data_tests:
+          - not_null:
+              name: ods__iabs__deposit_contract__not_null_start_date
+      - name: planned_end_date
+        description: Date the deposit term ends according to the contract.
+        data_tests:
+          - not_null:
+              name: ods__iabs__deposit_contract__not_null_planned_end_date
+      - name: account_number
+        description: 20-digit account number of the deposit; balance account 21100 for UZS deposits, 21110 for USD deposits.
+      - name: actual_end_date
+        description: Date the deposit was actually closed, on maturity or early; empty while active.
+      - name: state
+        description: Contract state; active (running), closed (paid out at the planned end) or closed_early (paid out before the planned end).
+        data_tests:
+          - not_null:
+              name: ods__iabs__deposit_contract__not_null_state
+          - accepted_values:
+              name: ods__iabs__deposit_contract__accepted_values_state
+              arguments:
+                values: [ "active", "closed", "closed_early" ]
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

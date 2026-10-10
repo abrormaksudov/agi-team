@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: ods__iabs__branch
+    description: >
+      Bank branches of iABS from the reference data, one row per branch: a regional office in each region plus
+      the digital head office. Reference data that changes rarely. Full reload from the source every operating
+      day. Joins to ods__iabs__customer on branch_code (the servicing branch of a customer) and to
+      ods__iabs__region on region_code.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__iabs__branch__equal_row_count
+          arguments:
+            compare_model: source("iabs", "branch")
+    columns:
+      - name: branch_code
+        description: 5-digit branch code (MFO), the servicing branch of customers in ods__iabs__customer.
+        data_tests:
+          - not_null:
+              name: ods__iabs__branch__not_null_branch_code
+          - unique:
+              name: ods__iabs__branch__unique_branch_code
+      - name: branch_name
+        description: "Branch name: a regional office or the digital head office."
+      - name: region_code
+        description: Region the branch belongs to (ods__iabs__region.region_code).
+        data_tests:
+          - not_null:
+              name: ods__iabs__branch__not_null_region_code
+          - relationships:
+              name: ods__iabs__branch__relationships_region_code
+              arguments:
+                to: ref("ods__iabs__region")
+                field: region_code
+              config:
+                severity: warn
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

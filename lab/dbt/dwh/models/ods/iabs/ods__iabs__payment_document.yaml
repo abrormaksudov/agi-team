@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: ods__iabs__payment_document
+    description: >
+      iABS payment orders, interbank and intrabank: one row per payment document, with payer and payee
+      account, bank code (5-digit MFO; 01099 is this bank), amount, purpose and state. Amounts in minor
+      units of the currency (tiyin for UZS, cents for USD). Loaded per operating day; replaying a day
+      replaces it. Payer and payee names are personal data for individuals.
+    columns:
+      - name: document_id
+        description: Identifier of the payment document in iABS; one row per document
+        data_tests:
+          - not_null:
+              name: ods__iabs__payment_document__not_null_document_id
+          - unique:
+              name: ods__iabs__payment_document__unique_document_id
+      - name: document_date
+        description: Date of the payment document.
+      - name: oper_day
+        description: Operating day the payment was made; the day this load replaces.
+        data_tests:
+          - not_null:
+              name: ods__iabs__payment_document__not_null_oper_day
+      - name: payer_account
+        description: 20-digit account number of the payer (same structure as ods__iabs__account.account_number).
+        data_tests:
+          - not_null:
+              name: ods__iabs__payment_document__not_null_payer_account
+      - name: payer_bank_code
+        description: 5-digit MFO code of the payer's bank; 01099 is this bank.
+      - name: payer_name
+        description: Personal data. Name of the payer, a person or a company, as on the payment order.
+      - name: payee_account
+        description: 20-digit account number of the payee (same structure as ods__iabs__account.account_number).
+        data_tests:
+          - not_null:
+              name: ods__iabs__payment_document__not_null_payee_account
+      - name: payee_bank_code
+        description: 5-digit MFO code of the payee's bank; 01099 is this bank.
+      - name: payee_name
+        description: Personal data. Name of the payee, a person or a company, as on the payment order.
+      - name: amount
+        description: Amount in minor units of the currency; tiyin for UZS, cents for USD.
+        data_tests:
+          - not_null:
+              name: ods__iabs__payment_document__not_null_amount
+      - name: currency_code
+        description: Currency of the payment, ISO code; UZS or USD.
+        data_tests:
+          - accepted_values:
+              name: ods__iabs__payment_document__accepted_values_currency_code
+              arguments:
+                values: [ "UZS", "USD" ]
+      - name: purpose
+        description: Free-text purpose of the payment, for example P2P transfer, Salary for a month, Utility payment, Mobile top-up, Repayment under a loan contract.
+      - name: state
+        description: State of the payment order; executed in every row of the source so far.
+        data_tests:
+          - not_null:
+              name: ods__iabs__payment_document__not_null_state
+          - accepted_values:
+              name: ods__iabs__payment_document__accepted_values_state
+              arguments:
+                values: [ "executed" ]
+      - name: created_at
+        description: Time the payment order was created in iABS, with time zone (UTC+5).
+        data_tests:
+          - not_null:
+              name: ods__iabs__payment_document__not_null_created_at
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

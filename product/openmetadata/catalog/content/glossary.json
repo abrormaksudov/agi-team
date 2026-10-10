@@ -1,0 +1,592 @@
+{
+  "glossary": {
+    "name": "banking",
+    "displayName": "Banking",
+    "description": "The bank's business vocabulary: what its lending, payments, customer and regulatory terms mean and exactly how this bank's warehouse implements them, each linked to the tables and columns that carry it. Owned by Data Platform. The catalog's search and the AI assistant use it to answer questions in the bank's own language and to tell a general banking meaning from this bank's rule."
+  },
+  "terms": [
+    {
+      "name": "PINFL",
+      "displayName": "PINFL (Personal Identification Number)",
+      "description": "**PINFL** (*personal identification number of an individual*, Uzbek JShShIR) is the 14-digit number the state assigns to every individual for life. It is printed on the passport or ID card and is the main identifier of individuals in Uzbek banking.\n\nStructure (synthetic in this lab): century and gender (1) + date of birth DDMMYY (6) + district (3) + serial (3) + check digit (1).\n\nHere PINFL is the identity bridge between the three systems: the mobile app user, the iABS individual customer and the TranzAxis client. `datamart.clients_id_xref` holds one row per PINFL with the matching app accounts, iABS customer and TranzAxis client. One person can own several app accounts with the same PINFL (a known data-quality issue), so count people by `pinfl`, not by `user_id`.\n\nPINFL is personal data under the Law \"On Personal Data\" (tag PII.Sensitive). Use it only under the terms of use of `datamart.clients_id_xref`.",
+      "synonyms": [
+        "personal identification number",
+        "Personal Identification Number of an Individual",
+        "JShShIR",
+        "ПИНФЛ"
+      ],
+      "relatedTerms": [
+        "KYC",
+        "NIBBD"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.datamart.clients_id_xref"
+        ],
+        "columns": [
+          "greenplum.dwh.ods__*.*.pinfl",
+          "greenplum.dwh.ods__iabs.customer_company.director_pinfl",
+          "greenplum.dwh.datamart.clients_id_xref.pinfl",
+          "greenplum.dwh.datamart.portfolio_daily.pinfl"
+        ]
+      }
+    },
+    {
+      "name": "Operating Day",
+      "displayName": "Operating Day",
+      "description": "The bank's business day: the date every posting, balance and report is booked to. A day is opened, business runs, and the closing of day ends it; balances and classes are stated as of the end of the operating day.\n\nIn this lab every calendar day, weekends and public holidays included, is an operating day: the card and retail credit engines work seven days a week. `is_weekend` and `is_holiday` flag those days instead of skipping them.\n\n- Calendar: `ods__iabs.operating_day` (previous and next day, `day_status`).\n- Daily facts carry the day as `oper_day`; per-day marts carry it as `report_date`, the state at the end of that day.\n\nPitfall: days past due count calendar days. Here they equal operating days; in a bank that closes only on working days they do not.",
+      "synonyms": [
+        "oper day",
+        "oper_day",
+        "operational day",
+        "business day",
+        "bank day",
+        "операционный день"
+      ],
+      "relatedTerms": [
+        "Closing of Day",
+        "Days Past Due",
+        "CBU Rate"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.ods__iabs.operating_day"
+        ],
+        "columns": [
+          "greenplum.dwh.ods__*.*.oper_day",
+          "greenplum.dwh.ods__iabs.operating_day.*_oper_day",
+          "greenplum.dwh.datamart.tx_turnover.oper_day",
+          "greenplum.dwh.datamart.card_operations_daily.oper_day"
+        ]
+      }
+    },
+    {
+      "name": "Closing of Day",
+      "displayName": "Closing of Day",
+      "description": "The end-of-day process that closes an operating day. In a bank the core system finishes the day's postings and accruals, reconciles the card and credit engines with the core ledger, marks the day closed and opens the next one. The closing event starts the warehouse's daily load.\n\nIn this lab:\n\n- Airflow DAG `sim__operating_day` plays a day: it loads the day's new and changed rows into iABS, TranzAxis and the mobile backend, then closes the day by triggering `dbt__cod` with run id `oper_day__<day>`.\n- `dbt__cod` builds every model tagged `cod` for that `oper_day`. Daily facts load that day, current-state tables reload in full, marts compute the end-of-day state with `report_date` = the operating day, and test results go to `dbt_test__audit.dq_test_log`. `dwh_job_id` on every row names the run that wrote it.\n- Days are closed in order: `datamart.contract_classification_daily` reads its own previous day. Replaying a day replaces its rows.\n- TranzAxis loan accounts are not mirrored into the iABS ledger here, so loan figures reconcile to the TranzAxis ledger (`datamart.tx_turnover`).",
+      "synonyms": [
+        "closing of the operating day",
+        "end of day",
+        "EOD",
+        "COD",
+        "day close",
+        "закрытие операционного дня"
+      ],
+      "relatedTerms": [
+        "Operating Day",
+        "Contract Classification"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.ods__iabs.operating_day.day_status"
+        ]
+      }
+    },
+    {
+      "name": "Balance Account",
+      "displayName": "Balance Account (Chart of Accounts)",
+      "description": "A 5-digit code from the chart of accounts for commercial banks, set by the Central Bank of Uzbekistan. It says what an account holds and on which side of the balance sheet it sits. The first digit is the class: 1 assets, 2 liabilities, 3 equity, 4 income, 5 expenses, 9 off-balance (memorandum). Every account number starts with its balance account.\n\nThis lab's chart follows the CBU's structure but uses its own codes and names: `ods__iabs.balance_account` (class, section, normal side, contra flag). Codes used for lending:\n\n- 16100 credit-line principal, 16200 microloan principal\n- 16400 / 16410 overdue principal of credit lines / microloans, reconciled with the Overdue Loans Report\n- 16500 / 16510 accrued interest, 16600 / 16610 overdue interest, 16700 penalties\n- 91000 / 91010 written-off principal / interest (memorandum), 92100 unused credit-line limits\n- 20500 card accounts of individuals, 21100 / 21110 term deposits in UZS / FX\n\nCarried by `balance_account` in `ods__iabs.account`, `ods__tranzaxis.contract_account` and `datamart.tx_turnover`.",
+      "synonyms": [
+        "chart of accounts",
+        "balance sheet account",
+        "ledger account",
+        "GL account",
+        "балансовый счёт"
+      ],
+      "relatedTerms": [
+        "Account Number",
+        "Write-off",
+        "Provisions",
+        "Overdue Loans Report"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.ods__iabs.balance_account"
+        ],
+        "columns": [
+          "greenplum.dwh.ods__*.*.balance_account",
+          "greenplum.dwh.ods__iabs.balance_account.code",
+          "greenplum.dwh.datamart.tx_turnover.balance_account"
+        ]
+      }
+    },
+    {
+      "name": "Account Number",
+      "displayName": "Account Number (20 digits)",
+      "description": "The 20-digit number of a bank account in Uzbekistan. Each part has a meaning:\n\n- positions 1–5: balance account\n- 6–8: currency, the ISO numeric code, `000` for UZS\n- 9: check digit\n- 10–17: the owner's 8-digit customer code (`ods__iabs.customer.customer_code`)\n- 18–20: sequence number\n\nSo the number alone shows the product, the currency and the owner: an account starting `16410000` holds overdue microloan principal in UZS. In payments it travels with the 5-digit bank code (MFO). iABS (`ods__iabs.account`) and TranzAxis (`ods__tranzaxis.contract_account`) use the same format. The lab's check digit is a synthetic checksum, so numbers do not validate as real ones.",
+      "synonyms": [
+        "account number structure",
+        "20-digit account number",
+        "bank account number",
+        "лицевой счёт"
+      ],
+      "relatedTerms": [
+        "Balance Account",
+        "NIBBD"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.ods__*.*.account_number",
+          "greenplum.dwh.ods__iabs.payment_document.payer_account",
+          "greenplum.dwh.ods__iabs.payment_document.payee_account",
+          "greenplum.dwh.ods__tranzaxis.contract.settlement_account",
+          "greenplum.dwh.datamart.tx_turnover.account_number"
+        ]
+      }
+    },
+    {
+      "name": "Days Past Due",
+      "displayName": "Days Past Due (DPD)",
+      "description": "How long a contract has been overdue: calendar days from the due date of the oldest amount still unpaid to the report date. The bank counts it FIFO (see *FIFO Overdue Ageing*), separately for principal and interest; the contract's figure is the larger of the two.\n\n- 0 when nothing is overdue. On the due date itself the unpaid amount is already on an overdue account (class `overdue`, band up to 30 days) with DPD 0; the next day it is 1.\n- A repayment that clears the oldest slice moves the count forward to the next-oldest one.\n- At 361 days the contract is written off and DPD returns to 0.\n\nWhere: `datamart.contract_classification_daily.days_past_due` (drives the overdue band), `datamart.contract_classification_tech.days_past_due_principal` / `days_past_due_interest`, the borrower's maximum in `datamart.portfolio_daily.max_days_past_due`. TranzAxis records its own figure in `ods__tranzaxis.delinquency_history.days_past_due`; the dbt test `datamart__contract_classification_daily__dpd_matches_tranzaxis_state` compares the two every day.\n\nNot the same as `consecutive_overdue_days`, which counts days overdue without a break and does not move back on partial repayments.",
+      "synonyms": [
+        "DPD",
+        "days overdue",
+        "overdue days",
+        "delinquency days",
+        "дни просрочки"
+      ],
+      "relatedTerms": [
+        "FIFO Overdue Ageing",
+        "Overdue Band",
+        "Contract Classification",
+        "Non-Performing Loan",
+        "Write-off"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.datamart.contract_classification_*.days_past_due*",
+          "greenplum.dwh.datamart.portfolio_daily.max_days_past_due",
+          "greenplum.dwh.ods__tranzaxis.delinquency_history.days_past_due"
+        ]
+      }
+    },
+    {
+      "name": "FIFO Overdue Ageing",
+      "displayName": "FIFO Overdue Ageing",
+      "description": "How the bank ages overdue debt, first in, first out:\n\n1. Every amount unpaid at the end of its due date moves to an overdue account (overdue principal or overdue interest) as a *slice* dated by that due date.\n2. Repayments clear overdue interest first, then overdue principal, oldest slice first; then current interest and principal, then penalties.\n3. Days past due count from the oldest slice still unpaid.\n\nExample: the 10 June and 10 July instalments are unpaid, so on 1 August DPD is 52. The borrower pays enough to clear the June slices and DPD drops to 22, although the contract never stopped being overdue (`consecutive_overdue_days` keeps counting).\n\nThe warehouse rebuilds the clock from the ledger in `datamart.contract_classification_tech`: each debit of an overdue account in `datamart.tx_turnover` is a slice, and the oldest unpaid slice is the first debit whose running total exceeds everything credited so far (`oldest_unpaid_principal_date`, `oldest_unpaid_interest_date`). A write-off clears all slices but is not a repayment. TranzAxis uses the same clock for its delinquency states.",
+      "synonyms": [
+        "FIFO",
+        "FIFO ageing",
+        "FIFO aging",
+        "FIFO days past due",
+        "overdue ageing",
+        "oldest unpaid slice"
+      ],
+      "relatedTerms": [
+        "Days Past Due",
+        "Overdue Band",
+        "Statement Cycle",
+        "Microloan"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.datamart.contract_classification_tech.oldest_unpaid_*_date"
+        ]
+      }
+    },
+    {
+      "name": "Overdue Band",
+      "displayName": "Overdue Band",
+      "description": "The days-past-due range an overdue contract falls into. The bands are the columns of the Overdue Loans Report: `1_30` up to 30 days (DPD 0–30), `31_60`, `61_90`, `91_180`, `181_360`, `361_730` (361 days to 2 years), `730_plus` (over 2 years), plus `total`.\n\n- Set only for contracts in class `overdue`, from FIFO days past due; empty otherwise (test `band_iff_overdue`).\n- Dictionary: `dictionary.overdue_bands` (`min_days`, `max_days`, `sort_order`).\n- Used in `datamart.contract_classification_daily.overdue_band`, `datamart_regtech.overdue_loans_report.band_code` and as the `dimension` of metric `overdue_portfolio` in `datamart.metrics_daily`.\n- TranzAxis keeps matching delinquency states (`dpd_1_30` … `dpd_181_360`) in `ods__tranzaxis.delinquency_history.state`.\n\nLoans are written off at 361 days past due here, so the two oldest bands stay at zero. They exist because the report template has them.",
+      "synonyms": [
+        "overdue bucket",
+        "DPD bucket",
+        "delinquency bucket",
+        "ageing band",
+        "overdue_band"
+      ],
+      "relatedTerms": [
+        "Days Past Due",
+        "FIFO Overdue Ageing",
+        "Overdue Loans Report",
+        "Contract Classification"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.dictionary.overdue_bands"
+        ],
+        "columns": [
+          "greenplum.dwh.datamart.contract_classification_daily.overdue_band",
+          "greenplum.dwh.datamart_regtech.overdue_loans_report.band_code",
+          "greenplum.dwh.dictionary.overdue_bands.band_code"
+        ]
+      }
+    },
+    {
+      "name": "Non-Performing Loan",
+      "displayName": "Non-Performing Loan (NPL)",
+      "description": "A loan the borrower has in effect stopped servicing. The bank applies the international 90-day rule: a loan is non-performing when principal or interest is more than 90 days past due.\n\nIn this lab:\n\n- `datamart.portfolio_daily.is_npl` flags a borrower when any open contract is over 90 FIFO days past due.\n- Metric `npl_90_ratio` in `datamart.metrics_daily` is the principal (current plus overdue) of contracts over 90 days past due divided by the gross loan portfolio. Written-off contracts are left out of both.\n- A written-off loan is no longer an NPL: it has left the balance sheet.\n\nThe full regulatory definition also covers loans unlikely to be repaid whatever their days past due, such as restructured loans or loans in litigation. The lab does not model those.",
+      "synonyms": [
+        "NPL",
+        "NPL 90+",
+        "non-performing exposure",
+        "bad loan",
+        "problem loan"
+      ],
+      "relatedTerms": [
+        "Days Past Due",
+        "Contract Classification",
+        "Write-off",
+        "Provisions"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.datamart.portfolio_daily.is_npl"
+        ]
+      }
+    },
+    {
+      "name": "Contract Classification",
+      "displayName": "Contract Classification (Asset Quality Class)",
+      "description": "The class the bank gives each open credit contract (credit line or microloan) at the end of every operating day. In `datamart.contract_classification_daily.classification` the first rule that matches wins:\n\n1. `overdue`: any overdue principal or interest\n2. `written_off`: written off at 361 days past due\n3. `repaying_carried_balance`: credit line carrying a balance past a statement, so interest accrues\n4. `interest_only`: only interest outstanding\n5. `principal_only`: credit line drawn within its interest-free grace period\n6. `dormant`: credit line with no balance and nothing drawn for over 90 days\n7. `microloan_first_period`: microloan before its first instalment is due\n8. `performing`: everything else\n\nThe class feeds the Overdue Loans Report, portfolio figures and NPL. `previous_classification` and `days_in_classification` track changes. A borrower's worst class is `datamart.portfolio_daily.worst_classification`, worst first: written_off, overdue, repaying_carried_balance, interest_only, principal_only, microloan_first_period, performing, dormant. Inputs come from `datamart.contract_classification_tech`.\n\n**Relation to asset quality classes.** CBU rules require banks to sort assets into five quality classes (standard, substandard, unsatisfactory, doubtful, loss), mainly by days past due and the borrower's financial condition, and to hold provisions by class. The lab does not compute these regulatory classes. This classification and FIFO days past due are the inputs such a classification would use.",
+      "synonyms": [
+        "asset quality class",
+        "asset quality classification",
+        "loan classification",
+        "credit classification",
+        "classification class"
+      ],
+      "relatedTerms": [
+        "Days Past Due",
+        "Overdue Band",
+        "Non-Performing Loan",
+        "Provisions",
+        "Write-off",
+        "Grace Period",
+        "Microloan",
+        "Credit Line"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.datamart.contract_classification_daily",
+          "greenplum.dwh.datamart.contract_classification_tech"
+        ],
+        "columns": [
+          "greenplum.dwh.datamart.contract_classification_daily.classification",
+          "greenplum.dwh.datamart.contract_classification_daily.previous_classification",
+          "greenplum.dwh.datamart.portfolio_daily.worst_classification"
+        ]
+      }
+    },
+    {
+      "name": "Provisions",
+      "displayName": "Provisions (Loan Loss Reserves)",
+      "description": "Reserves a bank sets aside against expected losses on its loans. In Uzbek banking they are formed under CBU rules by asset quality class (the worse the class, the larger the share of the exposure reserved) and, in IFRS reporting, as IFRS 9 expected credit loss (ECL). A provision is a contra-asset that reduces net loans and is charged to expense. A write-off is normally covered by the provision built up before it.\n\n**Not modelled in this lab:** no provisions are calculated or posted. The chart of accounts lists provision accounts (19100–19210 contra-asset, 51100 / 51200 expense) for completeness, but no account is opened on them.",
+      "synonyms": [
+        "loan loss provisions",
+        "loan loss reserves",
+        "reserves for possible losses",
+        "expected credit loss",
+        "ECL",
+        "allowance for credit losses"
+      ],
+      "relatedTerms": [
+        "Contract Classification",
+        "Write-off",
+        "Non-Performing Loan",
+        "Balance Account"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": []
+      }
+    },
+    {
+      "name": "Write-off",
+      "displayName": "Write-off",
+      "description": "Removing a loan the bank no longer expects to collect from the balance sheet. The claim on the borrower remains and is tracked off-balance on memorandum accounts in case it is recovered later.\n\nIn this lab (TranzAxis):\n\n- A contract is written off automatically on the day its oldest unpaid slice reaches **361 days past due**.\n- All its balances (current and overdue principal and interest, penalties, unused limit) are credited to zero. Principal moves to memorandum account 91000 (role `write_off`), interest to 91010 (`write_off_interest`). Unpaid penalties are dropped.\n- Contract status, class and TranzAxis delinquency state become `written_off`; days past due return to 0.\n- Recoveries after write-off are not modelled.\n\nWhere: `datamart.contract_classification_tech.written_off_principal` / `written_off_interest`, and the daily metric `write_offs` in `datamart.metrics_daily` (debits to the write-off accounts that day). Written-off loans are left out of the gross loan portfolio and the NPL ratio.",
+      "synonyms": [
+        "write off",
+        "written off",
+        "charge-off",
+        "bad debt write-off"
+      ],
+      "relatedTerms": [
+        "Days Past Due",
+        "Provisions",
+        "Non-Performing Loan",
+        "Contract Classification",
+        "Balance Account"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.datamart.contract_classification_tech.written_off_*"
+        ]
+      }
+    },
+    {
+      "name": "Statement Cycle",
+      "displayName": "Statement Cycle",
+      "description": "The monthly billing period of a credit line. It ends with a statement of what the cardholder owes and the minimum to pay.\n\nIn this lab (`ods__tranzaxis.credit_line_cycle`, one row per statement):\n\n- Statements fall monthly on the day of the month the line was opened. The cycle runs from the day after the previous statement (`cycle_start_date`) to `statement_date`.\n- `statement_balance` = principal + interest + overdue amounts + penalties.\n- `min_payment` = 10% of principal (at least 100,000 UZS, at most the principal) + all interest + all overdue amounts and penalties.\n- `due_date` = statement date + 20 days, the grace period.\n- On the due date the unpaid part of the minimum principal moves to overdue principal and unpaid interest to overdue interest. `overdue_start_date` is set and the FIFO clock starts.\n- If a statement is not paid in full, the next statement charges interest on the outstanding principal: principal × annual rate × 30 / 365.\n\nThe latest statement of each contract is in `datamart.contract_classification_tech` (`statement_date`, `statement_due_date`, `statement_min_payment`, `statement_paid_amount`).",
+      "synonyms": [
+        "billing cycle",
+        "statement period",
+        "credit line cycle",
+        "monthly statement",
+        "minimum payment"
+      ],
+      "relatedTerms": [
+        "Credit Line",
+        "Grace Period",
+        "FIFO Overdue Ageing"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.ods__tranzaxis.credit_line_cycle"
+        ],
+        "columns": [
+          "greenplum.dwh.datamart.contract_classification_tech.statement_*"
+        ]
+      }
+    },
+    {
+      "name": "Grace Period",
+      "displayName": "Grace Period",
+      "description": "The interest-free period of a credit line: what was spent in a cycle carries no interest if the statement balance is repaid in full by the due date.\n\nHere it runs from the statement date to the due date 20 days later (`ods__tranzaxis.credit_line_cycle.grace_end_date`, equal to `due_date`).\n\n- Missing the minimum payment by then makes the shortfall overdue.\n- Paying the minimum but not the whole balance keeps the line current, but interest is charged from the next statement (class `repaying_carried_balance`).\n- A line with a drawn balance that is still interest-free is in class `principal_only`.\n- `datamart.contract_classification_daily.is_first_grace_period` is true for a credit line before the due date of its first statement.\n\nIn other Uzbek lending, a grace period can also mean a deferral of principal repayments at the start of a loan. Microloans in this lab have none.",
+      "synonyms": [
+        "interest-free period",
+        "grace",
+        "first grace period"
+      ],
+      "relatedTerms": [
+        "Statement Cycle",
+        "Credit Line",
+        "Contract Classification"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.ods__tranzaxis.credit_line_cycle.grace_end_date",
+          "greenplum.dwh.datamart.contract_classification_daily.is_first_grace_period"
+        ]
+      }
+    },
+    {
+      "name": "Microloan",
+      "displayName": "Microloan",
+      "description": "A small, short-term consumer loan to an individual, usually unsecured and issued digitally.\n\nIn this lab (TranzAxis `contract_type = 'microloan'`, products `ML_3M_54` … `ML_12M_54` for terms of 3 to 12 months):\n\n- Paid out in one amount (`principal_amount`) on the opening day and repaid by a monthly annuity on the same day of the month. Each instalment is split into a principal line and an interest line in `ods__tranzaxis.payment_schedule`.\n- Whatever is unpaid at the end of a due date becomes overdue, as FIFO slices.\n- No grace period. Before the first instalment the contract is in class `microloan_first_period`.\n- Balance accounts: 16200 principal, 16410 overdue principal, 16510 accrued interest, 16610 overdue interest.\n\nRow `0110` of the Overdue Loans Report; metrics `microloan_disbursements_volume` and `microloan_disbursements_count`.",
+      "synonyms": [
+        "micro loan",
+        "microcredit",
+        "instalment loan",
+        "микрозайм",
+        "mikroqarz"
+      ],
+      "relatedTerms": [
+        "Credit Line",
+        "FIFO Overdue Ageing",
+        "Contract Classification",
+        "Overdue Loans Report"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.ods__tranzaxis.payment_schedule"
+        ],
+        "columns": [
+          "greenplum.dwh.ods__tranzaxis.contract.term_months",
+          "greenplum.dwh.ods__tranzaxis.contract.principal_amount"
+        ]
+      }
+    },
+    {
+      "name": "Credit Line",
+      "displayName": "Credit Line",
+      "description": "A revolving credit limit the customer draws on and repays again and again. Here it is a card-linked consumer credit line (product `PL_CARD_49`), spent through the card.\n\nIn this lab (TranzAxis `contract_type = 'credit_line'`):\n\n- The limit (`ods__tranzaxis.contract.credit_limit`) sits off-balance as an unused commitment (92100, role `limit`). Each purchase moves money from the limit to principal (16100); each principal repayment restores it.\n- Billed in monthly statement cycles with a 20-day grace period and a minimum payment.\n- Blocked (`status = 'blocked'`, no new drawings) when more than 30 days past due, active again once nothing is overdue.\n- Overdue principal 16400, accrued interest 16500, overdue interest 16600.\n\nRow `0120` of the Overdue Loans Report. Metric `credit_line_utilisation` is drawn principal divided by the total limit of active and blocked lines. The undrawn part is `datamart.contract_classification_tech.unused_limit`.",
+      "synonyms": [
+        "revolving credit line",
+        "card credit line",
+        "credit card limit",
+        "кредитная линия"
+      ],
+      "relatedTerms": [
+        "Statement Cycle",
+        "Grace Period",
+        "Microloan",
+        "Humo and Uzcard",
+        "Overdue Loans Report"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.ods__tranzaxis.contract.credit_limit",
+          "greenplum.dwh.datamart.contract_classification_tech.unused_limit"
+        ]
+      }
+    },
+    {
+      "name": "CBU Rate",
+      "displayName": "CBU Exchange Rate",
+      "description": "The official exchange rate of the Central Bank of Uzbekistan: so'm per unit (or per `nominal` units) of a foreign currency, set for each date. Banks use it to state foreign-currency balances and operations in UZS (the *UZS equivalent*) in their books and reports.\n\nIn this lab: `ods__iabs.exchange_rate` holds USD, EUR, RUB, KZT, CNY and GBP, one row per currency and calendar date. `rate` is in so'm with decimals, not tiyin, and `nominal` is 1. The rate of the day converts:\n\n- `ods__iabs.account_balance.closing_balance_eqv`\n- `datamart.deposits_daily.balance_uzs`\n- `ods__tranzaxis.card_transaction.amount_uzs` for USD card operations\n\nPitfall: convert at the rate of the operating day, not today's rate. Not to be confused with the CBU policy (refinancing) rate, an interest rate the lab does not use.",
+      "synonyms": [
+        "CBU exchange rate",
+        "official exchange rate",
+        "Central Bank rate",
+        "rate of the day",
+        "курс ЦБ"
+      ],
+      "relatedTerms": [
+        "Tiyin",
+        "Operating Day"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.ods__iabs.exchange_rate"
+        ],
+        "columns": [
+          "greenplum.dwh.ods__iabs.exchange_rate.rate"
+        ]
+      }
+    },
+    {
+      "name": "Tiyin",
+      "displayName": "Tiyin",
+      "description": "The minor unit of the Uzbek so'm: 1 UZS = 100 tiyin. The coins are rarely used, but the unit remains in accounting and in ISO 4217 (2 decimal places).\n\nIn this lab every amount in the sources and the warehouse is an integer in minor units: tiyin for UZS, cents for USD. That covers balances, turnovers, payments and card amounts, even columns named `*_uzs` such as `amount_uzs` and `balance_uzs`. Exceptions:\n\n- `datamart.metrics_daily.value` is in UZS (tiyin ÷ 100)\n- `datamart_regtech.overdue_loans_report` is in thousand UZS (tiyin ÷ 100,000)\n- `ods__iabs.exchange_rate.rate` is in so'm with decimals\n\nPitfall: reading tiyin as UZS overstates a figure a hundredfold.",
+      "synonyms": [
+        "tiyn",
+        "tiyins",
+        "minor units",
+        "тийин"
+      ],
+      "relatedTerms": [
+        "CBU Rate",
+        "Overdue Loans Report"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.datamart.card_operations_daily.*amount_uzs",
+          "greenplum.dwh.ods__tranzaxis.card_transaction.amount_uzs",
+          "greenplum.dwh.datamart.deposits_daily.balance_uzs",
+          "greenplum.dwh.ods__iabs.account_balance.closing_balance_eqv"
+        ]
+      }
+    },
+    {
+      "name": "Humo and Uzcard",
+      "displayName": "Humo / Uzcard",
+      "description": "Uzbekistan's two national card payment systems. Both are domestic UZS card schemes, and each runs its own processing centre that routes and clears its cards' transactions between banks.\n\nIn this lab TranzAxis issues cards of both networks (`network` = `HUMO` or `UZCARD`) as plastic, virtual or sticker cards. Humo card numbers start with 9860, Uzcard with 8600. Only the masked PAN (first 6 and last 4 digits) and a SHA-256 hash of the full number are stored.\n\nWhere: `ods__tranzaxis.card.network`, `datamart.card_operations_daily.network`.",
+      "synonyms": [
+        "Humo",
+        "Uzcard",
+        "HUMO",
+        "UZCARD",
+        "card network",
+        "card scheme",
+        "national payment system"
+      ],
+      "relatedTerms": [
+        "Merchant Category Code",
+        "Credit Line"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": [
+          "greenplum.dwh.ods__tranzaxis.card.network",
+          "greenplum.dwh.datamart.card_operations_daily.network"
+        ]
+      }
+    },
+    {
+      "name": "Merchant Category Code",
+      "displayName": "Merchant Category Code (MCC)",
+      "description": "The 4-digit code (ISO 18245) an acquirer gives a merchant for its kind of business. It travels with every card transaction and drives spending analytics, fees, card restrictions, and fraud and AML rules.\n\nIn this lab the dictionary is `ods__tranzaxis.mcc` (about 70 codes), with:\n\n- `category_group`: the reporting group (grocery, transport, fuel, gambling, cash, transfers, …), shown as `mcc_group` in `datamart.card_operations_daily`\n- `is_cash_like`: cash-equivalent categories (cash withdrawals, money transfers), left out of metric `card_payment_volume`\n- `is_high_risk`: categories the bank watches more closely, such as gambling, counted in `high_risk_count`\n\nEach transaction's code is `ods__tranzaxis.card_transaction.mcc`.",
+      "synonyms": [
+        "MCC",
+        "merchant category",
+        "MCC group",
+        "merchant category group"
+      ],
+      "relatedTerms": [
+        "Humo and Uzcard"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.ods__tranzaxis.mcc"
+        ],
+        "columns": [
+          "greenplum.dwh.ods__tranzaxis.*.mcc",
+          "greenplum.dwh.ods__tranzaxis.mcc.category_group",
+          "greenplum.dwh.datamart.card_operations_daily.mcc_group"
+        ]
+      }
+    },
+    {
+      "name": "KYC",
+      "displayName": "Know Your Customer (KYC)",
+      "description": "Identifying customers and verifying their identity before serving them, as Uzbekistan's anti-money-laundering law requires. Digital banks do it remotely with document and biometric checks.\n\nIn this lab KYC runs in the mobile app (`ods__mobile.kyc_attempt`, one row per attempt):\n\n- Purpose: `onboarding` (first check, which makes the app user a bank customer), `new_device_login` and `password_reset` (re-verification).\n- Steps: personal data (checked against NIBBD), document scan, liveness and face match, address, product selection.\n- Status: `SUCCESS` passed, `HOLD` manual review, `FAIL` may retry, `REFUSE` rejected. `face_match_score` runs from 0 to 1; `aml_result` is GREEN or RED.\n- When onboarding succeeds, `ods__mobile.app_user.verification_level` becomes `full` and `core_customer_id` links the iABS customer.\n\nThe funnel and pass rate are in `datamart.kyc_funnel_daily`: `onboarding_pass_rate` = succeeded ÷ (succeeded + failed + refused), with HOLD left out. The selfie reference `face_photo_ref` is personal data.",
+      "synonyms": [
+        "Know Your Customer",
+        "identity verification",
+        "customer identification",
+        "customer due diligence",
+        "CDD",
+        "onboarding check",
+        "remote identification"
+      ],
+      "relatedTerms": [
+        "PINFL",
+        "NIBBD"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.ods__mobile.kyc_attempt",
+          "greenplum.dwh.datamart.kyc_funnel_daily"
+        ],
+        "columns": [
+          "greenplum.dwh.ods__mobile.app_user.verification_level"
+        ]
+      }
+    },
+    {
+      "name": "NIBBD",
+      "displayName": "NIBBD (National Information Base of Bank Depositors)",
+      "description": "The Central Bank of Uzbekistan's single register of bank clients and their accounts. Banks register each client and each account opened for it, and the client gets a unique code. The register is also used to trace a person's or company's accounts across banks, for example a debtor's.\n\n**Not modelled as a system in this lab.** It appears only in mobile onboarding: a KYC attempt can fail at the personal-data step with `fail_reason = 'nibbd_check_failed'` (the data did not match the register), and a refusal for that reason is also flagged `aml_result = 'RED'`. The iABS customer codes here are the bank's own, not NIBBD codes.",
+      "synonyms": [
+        "National Information Base of Bank Depositors",
+        "НИББД",
+        "bank client register"
+      ],
+      "relatedTerms": [
+        "KYC",
+        "PINFL",
+        "Account Number"
+      ],
+      "assets": {
+        "tables": [],
+        "columns": []
+      }
+    },
+    {
+      "name": "Overdue Loans Report",
+      "displayName": "Overdue Loans Report",
+      "description": "The monthly report to the Central Bank of Uzbekistan on the bank's overdue loans, as of the last calendar day of the month. Borrower categories (rows) are crossed with overdue bands (columns), giving the number of overdue contracts and their overdue principal and interest in thousand UZS.\n\nIn this lab it is `datamart_regtech.overdue_loans_report`, owned by Regulatory Reporting:\n\n- Rows come from `dictionary.overdue_report_rows`: `0100` loans to individuals, of which `0110` microloans and `0120` card credit lines; `0200` legal entities and individual entrepreneurs, always zero because the bank lends only to individuals.\n- Columns come from `dictionary.overdue_bands`, by FIFO days past due, plus `total`.\n- Source: contracts in class `overdue` in `datamart.contract_classification_daily` on the report date. Only the overdue part is reported, not the whole loan, and penalties are not included.\n- Every template cell is present, zeros included. The report is produced only on month-end operating days.\n- Checks: the bands add up to each row's total, and row `0100` overdue principal reconciles to the ledger balance of overdue-principal accounts 16400 and 16410.",
+      "synonyms": [
+        "overdue-loans report",
+        "CBU overdue loans report",
+        "regulatory overdue report",
+        "overdue report"
+      ],
+      "relatedTerms": [
+        "Overdue Band",
+        "Days Past Due",
+        "Contract Classification",
+        "Balance Account",
+        "Tiyin"
+      ],
+      "assets": {
+        "tables": [
+          "greenplum.dwh.datamart_regtech.overdue_loans_report",
+          "greenplum.dwh.dictionary.overdue_report_rows",
+          "greenplum.dwh.dictionary.overdue_bands"
+        ],
+        "columns": []
+      }
+    }
+  ]
+}

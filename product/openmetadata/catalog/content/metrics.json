@@ -1,0 +1,309 @@
+[
+  {
+    "name": "gross_loan_portfolio",
+    "displayName": "Gross Loan Portfolio",
+    "description": "Outstanding principal of the bank's retail loan book — card credit lines and microloans booked in TranzAxis — at the end of the operating day, before provisions. The base of the NPL ratio and of portfolio growth.\n\n**How it is computed.** Row `metric_key = 'gross_loan_portfolio'` of `datamart.metrics_daily`, from `datamart.contract_classification_daily` for the day: `sum(principal_balance + overdue_principal_balance) / 100` over every open credit contract except `classification = 'written_off'`. Current and overdue principal together; accrued interest (`interest_balance`), overdue interest and penalties are not included.\n\n**Period.** Stock (`period = 'stock'`): the level at the end of the operating day. Never sum it over days — for a month take the value on its last operating day; for an average balance average the daily values.\n\n**Unit.** UZS, converted from tiyin (the marts hold tiyin, 1/100 UZS: divide by 100 when recomputing). All TranzAxis credit is in UZS, so there is no currency conversion.\n\n**Pitfalls.**\n\n- Written-off loans are off-balance (account 91000) and excluded: a write-off lowers the portfolio without any repayment — read it with `write_offs`.\n- Not the same as `datamart.portfolio_daily.total_exposure`, which also adds overdue interest and penalties, per borrower.\n- Changes in the portfolio are not disbursements: drawdowns, repayments, write-offs all move it.\n- An empty (null) value means no contract rows for the day — the classification was not loaded — never a real zero portfolio.",
+    "metricType": "SUM",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "UZS",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'gross_loan_portfolio'\norder by report_date",
+    "computation": "select report_date\n    , sum(principal_balance + overdue_principal_balance) / 100.0 as gross_loan_portfolio_uzs\nfrom datamart.contract_classification_daily\nwhere classification <> 'written_off'\ngroup by report_date\norder by report_date",
+    "relatedMetrics": [
+      "overdue_portfolio",
+      "npl_90_ratio",
+      "write_offs",
+      "microloan_disbursements_volume",
+      "credit_line_utilisation"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.contract_classification_daily"
+    ],
+    "domain": "Lending"
+  },
+  {
+    "name": "overdue_portfolio",
+    "displayName": "Overdue Portfolio",
+    "description": "Overdue loan amounts — principal and interest past their due date and unpaid — at the end of the operating day, in total and by overdue band. The bands are those of the Central Bank overdue-loans report.\n\n**How it is computed.** Rows `metric_key = 'overdue_portfolio'` of `datamart.metrics_daily`, from `datamart.contract_classification_daily` for the day: `sum(overdue_principal_balance + overdue_interest_balance) / 100` (balance accounts 16400 / 16410 overdue principal, 16600 / 16610 overdue interest of credit lines / microloans). Only the overdue part counts, not the whole balance of an overdue contract; penalties (`penalty_balance`) are excluded.\n\n**Dimension.** `dimension` is the overdue band, `datamart.contract_classification_daily.overdue_band`, set by FIFO `days_past_due`: `1_30` (up to 30 days), `31_60`, `61_90`, `91_180`, `181_360`, `361_730`, `730_plus`; empty (null) on the total row. Band names are in `dictionary.overdue_bands`.\n\n**Period.** Stock (`period = 'stock'`): the level at the end of the operating day. Never sum it over days — for a month take the value on its last operating day; for an average balance average the daily values.\n\n**Unit.** UZS, converted from tiyin (the marts hold tiyin, 1/100 UZS: divide by 100 when recomputing).\n\n**Pitfalls.**\n\n- Do not add the total row to the band rows: the bands already sum to the total.\n- A band row exists only when at least one contract is in the band — a missing band means zero. Loans are written off at 361 days past due, so `361_730` and `730_plus` are normally absent.\n- Days past due are calendar days counted FIFO from the oldest unpaid slice: a partial repayment that clears the oldest slice moves a contract to a lower band.\n- Reconciles with the regulatory report `datamart_regtech.overdue_loans_report`, which is produced only on the last calendar day of a month; this metric is daily.\n- Overdue amount is not NPL: `npl_90_ratio` counts the whole principal of contracts over 90 days past due.",
+    "metricType": "SUM",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "UZS",
+    "granularity": "DAY",
+    "expression": "select report_date, coalesce(dimension, 'total') as overdue_band, value\nfrom datamart.metrics_daily\nwhere metric_key = 'overdue_portfolio'\norder by report_date, overdue_band",
+    "computation": "select report_date\n    , coalesce(overdue_band, 'total') as overdue_band\n    , sum(overdue_principal_balance + overdue_interest_balance) / 100.0 as overdue_portfolio_uzs\nfrom datamart.contract_classification_daily\nwhere classification = 'overdue'\ngroup by grouping sets ((report_date), (report_date, overdue_band))\norder by report_date, overdue_band",
+    "relatedMetrics": [
+      "gross_loan_portfolio",
+      "npl_90_ratio",
+      "write_offs"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.contract_classification_daily"
+    ],
+    "domain": "Regulatory Reporting"
+  },
+  {
+    "name": "npl_90_ratio",
+    "displayName": "NPL 90+ Ratio",
+    "description": "Non-performing loan ratio: the share of the gross loan portfolio held by contracts more than 90 days past due, at the end of the operating day. The headline asset-quality indicator.\n\n**How it is computed.** Row `metric_key = 'npl_90_ratio'` of `datamart.metrics_daily`, from `datamart.contract_classification_daily` for the day, excluding `classification = 'written_off'`: numerator `sum(principal_balance + overdue_principal_balance)` of contracts with `days_past_due > 90`; denominator the same sum over all contracts, i.e. `gross_loan_portfolio`. The whole outstanding principal of a non-performing contract counts, not only its overdue part; interest is excluded from both sides.\n\n**Period.** Stock ratio as of the end of the day. Never sum or average it over days: for a period take the end-of-period value, or divide summed numerators by summed denominators.\n\n**Unit.** Fraction: 0.05 = 5%. Null when the portfolio is zero.\n\n**Pitfalls.**\n\n- `> 90` means 91 days or more: the NPL contracts are those in bands `91_180` and above of `overdue_portfolio`. Days past due are FIFO calendar days.\n- Contract level: a borrower's other, performing contracts stay performing. `datamart.portfolio_daily.is_npl` is borrower level (worst contract over 90 days) and gives a higher share.\n- Write-offs at 361 days past due remove loans from both numerator and denominator, so the ratio falls on write-off days without any recovery — read it with `write_offs`.",
+    "metricType": "RATIO",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "ratio (0.05 = 5%)",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'npl_90_ratio'\norder by report_date",
+    "computation": "select report_date\n    , sum(case when days_past_due > 90 then principal_balance + overdue_principal_balance else 0 end)\n        / nullif(sum(principal_balance + overdue_principal_balance), 0) as npl_90_ratio\nfrom datamart.contract_classification_daily\nwhere classification <> 'written_off'\ngroup by report_date\norder by report_date",
+    "relatedMetrics": [
+      "gross_loan_portfolio",
+      "overdue_portfolio",
+      "write_offs"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.contract_classification_daily"
+    ],
+    "domain": "Lending"
+  },
+  {
+    "name": "write_offs",
+    "displayName": "Write-Offs",
+    "description": "Loan principal written off during the operating day: loans that reached 361 days past due, moved off-balance.\n\n**How it is computed.** Row `metric_key = 'write_offs'` of `datamart.metrics_daily`, from `datamart.tx_turnover` for `oper_day` = the day: `sum(debit_turnover) / 100` of the accounts with `account_role = 'write_off'` (off-balance account 91000). On write-off every on-balance account of the contract — principal, overdue principal, interest, overdue interest, penalty, unused limit — is credited to zero and the principal (current + overdue) is debited to the write-off account. Written-off interest goes to `account_role = 'write_off_interest'` and is not in this metric.\n\n**Period.** Flow during the day (`period = 'day'`). Sum over days for a period total.\n\n**Unit.** UZS, converted from tiyin (the marts hold tiyin, 1/100 UZS: divide by 100 when recomputing).\n\n**Pitfalls.**\n\n- 0 is a real zero (no write-offs that day); a missing row means the day was not loaded.\n- The credits posted on the write-off day are not repayments: do not count them as collections.\n- The written-off stock to date is the `closing_balance` of the `write_off` accounts in `datamart.tx_turnover`; summing this metric covers only the days loaded.",
+    "metricType": "SUM",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "UZS",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'write_offs'\norder by report_date",
+    "computation": "-- days without write-offs have no row here; metrics_daily shows 0\nselect oper_day as report_date\n    , sum(debit_turnover) / 100.0 as write_offs_uzs\nfrom datamart.tx_turnover\nwhere account_role = 'write_off'\ngroup by oper_day\norder by oper_day",
+    "relatedMetrics": [
+      "npl_90_ratio",
+      "overdue_portfolio",
+      "gross_loan_portfolio"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.tx_turnover"
+    ],
+    "domain": "Lending"
+  },
+  {
+    "name": "microloan_disbursements_volume",
+    "displayName": "Microloan Disbursements Volume",
+    "description": "Amount of microloans disbursed during the operating day.\n\n**How it is computed.** Row `metric_key = 'microloan_disbursements_volume'` of `datamart.metrics_daily`, from `datamart.tx_turnover` for `oper_day` = the day: `sum(debit_turnover) / 100` of the `account_role = 'principal'` accounts of `contract_type = 'microloan'`. A microloan's principal account is debited once, when the full principal is paid out to the borrower's card account on the contract's `open_date`; later movements are credits (repayment, transfer to overdue, write-off).\n\n**Period.** Flow during the day (`period = 'day'`). Sum over days for a period total.\n\n**Unit.** UZS, converted from tiyin (the marts hold tiyin, 1/100 UZS: divide by 100 when recomputing).\n\n**Pitfalls.**\n\n- Credit-line drawdowns also debit principal accounts but are excluded; they show in `credit_line_utilisation` and `card_payment_volume`.\n- Disbursements are not portfolio growth: repayments and write-offs move `gross_loan_portfolio` too.\n- 0 on a day without disbursements. Average ticket = volume / `microloan_disbursements_count` over the same days.",
+    "metricType": "SUM",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "UZS",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'microloan_disbursements_volume'\norder by report_date",
+    "computation": "select oper_day as report_date\n    , sum(debit_turnover) / 100.0 as microloan_disbursements_uzs\nfrom datamart.tx_turnover\nwhere account_role = 'principal'\n    and contract_type = 'microloan'\ngroup by oper_day\norder by oper_day",
+    "relatedMetrics": [
+      "microloan_disbursements_count",
+      "gross_loan_portfolio"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.tx_turnover"
+    ],
+    "domain": "Lending"
+  },
+  {
+    "name": "microloan_disbursements_count",
+    "displayName": "Microloan Disbursements Count",
+    "description": "Number of microloans disbursed during the operating day.\n\n**How it is computed.** Row `metric_key = 'microloan_disbursements_count'` of `datamart.metrics_daily`, from `datamart.tx_turnover` for `oper_day` = the day: `count(distinct contract_id)` of `contract_type = 'microloan'` with a debit on the principal account (`account_role = 'principal'` and `debit_turnover > 0`) — the disbursement.\n\n**Period.** Flow during the day (`period = 'day'`). Sum over days for a period total.\n\n**Unit.** Count of contracts (`unit = 'contracts'`).\n\n**Pitfalls.**\n\n- Counts contracts, not borrowers: one person can hold several microloans.\n- Same filter as `microloan_disbursements_volume`, so volume / count is the average ticket.\n- 0 on a day without disbursements; a missing row means the day was not loaded.",
+    "metricType": "COUNT",
+    "unitOfMeasurement": "COUNT",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'microloan_disbursements_count'\norder by report_date",
+    "computation": "-- days without disbursements have no row here; metrics_daily shows 0\nselect oper_day as report_date\n    , count(distinct contract_id) as microloan_disbursements_count\nfrom datamart.tx_turnover\nwhere account_role = 'principal'\n    and contract_type = 'microloan'\n    and debit_turnover > 0\ngroup by oper_day\norder by oper_day",
+    "relatedMetrics": [
+      "microloan_disbursements_volume",
+      "gross_loan_portfolio"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.tx_turnover"
+    ],
+    "domain": "Lending"
+  },
+  {
+    "name": "credit_line_utilisation",
+    "displayName": "Credit Line Utilisation",
+    "description": "Share of the approved limits on card credit lines that customers have drawn, at the end of the operating day.\n\n**How it is computed.** Row `metric_key = 'credit_line_utilisation'` of `datamart.metrics_daily`. Numerator: `sum(principal_balance + overdue_principal_balance)` of `contract_type = 'credit_line'` in `datamart.contract_classification_daily` for the day (every open line, blocked and dormant included). Denominator: `sum(credit_limit)` from `ods__tranzaxis.contract` where `contract_type = 'credit_line'`, `status in ('active', 'blocked')` and `open_date` on or before the day. Both sides are in tiyin, so the ratio needs no conversion.\n\n**Period.** Stock ratio as of the end of the day. Never sum or average it over days: for a period take the end-of-period value, or divide summed drawn amounts by summed limits.\n\n**Unit.** Fraction: 0.44 = 44%. Null when the total limit is zero.\n\n**Pitfalls.**\n\n- The denominator comes from the current-state contract table: recomputing a past day uses today's statuses and limits, not those of that day.\n- Blocked lines (frozen after 30 days past due) cannot be drawn but keep their limit in the denominator.\n- Drawn principal only: accrued and overdue interest are not utilisation.",
+    "metricType": "RATIO",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "ratio (0.05 = 5%)",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'credit_line_utilisation'\norder by report_date",
+    "computation": "with drawn as (\n    select report_date, sum(principal_balance + overdue_principal_balance) as drawn\n    from datamart.contract_classification_daily\n    where contract_type = 'credit_line'\n    group by report_date\n)\n, limits as (\n    select d.report_date, sum(k.credit_limit) as total_limit\n    from drawn as d\n        inner join ods__tranzaxis.contract as k\n            on k.open_date <= d.report_date\n    where k.contract_type = 'credit_line'\n        and k.status in ('active', 'blocked')\n    group by d.report_date\n)\nselect d.report_date, d.drawn / nullif(l.total_limit, 0) as credit_line_utilisation\nfrom drawn as d\n    left join limits as l\n        on l.report_date = d.report_date\norder by d.report_date",
+    "relatedMetrics": [
+      "gross_loan_portfolio",
+      "card_payment_volume"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.contract_classification_daily",
+      "greenplum.dwh.ods__tranzaxis.contract"
+    ],
+    "domain": "Lending"
+  },
+  {
+    "name": "term_deposit_balance",
+    "displayName": "Term Deposit Balance",
+    "description": "Balance of individuals' term deposits (6, 12 and 18 months; UZS and USD) open at the end of the operating day, in UZS — the bank's term retail funding.\n\n**How it is computed.** Row `metric_key = 'term_deposit_balance'` of `datamart.metrics_daily`, from `datamart.deposits_daily` for the day: `sum(balance_uzs) / 100`. A deposit counts when its `start_date` is on or before the day and it was not closed by then; `balance_uzs` is the UZS equivalent of the deposit account's closing balance on the day or, if the account did not move, on the latest earlier day it moved.\n\n**Period.** Stock (`period = 'stock'`): the level at the end of the operating day. Never sum it over days — for a month take the value on its last operating day; for an average balance average the daily values.\n\n**Unit.** UZS, converted from tiyin (the marts hold tiyin, 1/100 UZS: divide by 100 when recomputing).\n\n**Pitfalls.**\n\n- FX: USD deposits are not revalued daily. `balance_uzs` carries the CBU rate of the day the account last moved — usually the day the deposit was funded — so later rate changes are ignored. To revalue at the day's rate, convert `balance` (cents) with `ods__iabs.exchange_rate` (`rate / nominal` for `currency_code = 'USD'` and `rate_date` = the day).\n- Principal only: interest is paid monthly to a separate interest account and is not in the balance. Demand and card accounts are not term deposits.\n- A deposit whose account has no balance row yet counts with 0.",
+    "metricType": "SUM",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "UZS",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'term_deposit_balance'\norder by report_date",
+    "computation": "select d.report_date\n    , sum(d.balance_uzs) / 100.0 as term_deposit_balance_uzs\n    -- the same balances revalued at the CBU rate of the report day\n    , sum(case when d.currency_code = 'UZS' then d.balance else d.balance * r.rate / r.nominal end)\n        / 100.0 as revalued_at_day_rate_uzs\nfrom datamart.deposits_daily as d\n    left join ods__iabs.exchange_rate as r\n        on r.currency_code = d.currency_code\n        and r.rate_date = d.report_date\ngroup by d.report_date\norder by d.report_date",
+    "relatedMetrics": [
+      "active_depositors",
+      "deposit_interest_expense"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.deposits_daily"
+    ],
+    "domain": "Deposits"
+  },
+  {
+    "name": "active_depositors",
+    "displayName": "Active Depositors",
+    "description": "Number of customers holding at least one open term deposit at the end of the operating day.\n\n**How it is computed.** Row `metric_key = 'active_depositors'` of `datamart.metrics_daily`, from `datamart.deposits_daily` for the day: `count(distinct customer_code)` (8-digit iABS customer code).\n\n**Period.** Stock (`period = 'stock'`): the count at the end of the day. Never sum it over days.\n\n**Unit.** Count of customers (`unit = 'customers'`).\n\n**Pitfalls.**\n\n- Counted by iABS customer code, not by person: `datamart.clients_id_xref` links it to PINFL and to the mobile and TranzAxis identities.\n- Includes depositors whose deposit account has no balance yet (balance 0).\n- Not the same as `active_customers`, which counts card activity in TranzAxis.",
+    "metricType": "COUNT",
+    "unitOfMeasurement": "COUNT",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'active_depositors'\norder by report_date",
+    "computation": "select report_date\n    , count(distinct customer_code) as active_depositors\nfrom datamart.deposits_daily\ngroup by report_date\norder by report_date",
+    "relatedMetrics": [
+      "term_deposit_balance",
+      "deposit_interest_expense",
+      "active_customers"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.deposits_daily"
+    ],
+    "domain": "Deposits"
+  },
+  {
+    "name": "deposit_interest_expense",
+    "displayName": "Deposit Interest Expense",
+    "description": "Interest the bank accrues on individuals' term deposits for one day, estimated from end-of-day balances — the cost of term funding.\n\n**How it is computed.** Row `metric_key = 'deposit_interest_expense'` of `datamart.metrics_daily`, from `datamart.deposits_daily` for the day: `sum(balance_uzs * interest_rate / 100 / 365) / 100` — simple interest, actual/365, on each open deposit's UZS balance at its contract rate (`interest_rate` is percent a year, 22.5 = 22.5%).\n\n**Period.** Flow (`period = 'day'`): one calendar day of interest per operating day. Sum over days for a period estimate.\n\n**Unit.** UZS, converted from tiyin (the marts hold tiyin, 1/100 UZS: divide by 100 when recomputing).\n\n**Pitfalls.**\n\n- An estimate, not the booked expense: interest is credited monthly to the deposit's interest account (contract amount × rate / 12), so monthly bookings differ from the sum of daily estimates.\n- Not `datamart.deposits_daily.accrued_interest`, which is cumulative interest since the start date on the contract amount.\n- Operating vs calendar days: interest accrues every calendar day; where weekends and holidays are not closed as operating days, summing this metric over operating days understates the period.\n- Inherits the FX caveat of `term_deposit_balance`: USD balances at the rate of the account's last movement.",
+    "metricType": "SUM",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "UZS",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'deposit_interest_expense'\norder by report_date",
+    "computation": "select report_date\n    , sum(balance_uzs * interest_rate / 100 / 365) / 100.0 as deposit_interest_expense_uzs\nfrom datamart.deposits_daily\ngroup by report_date\norder by report_date",
+    "relatedMetrics": [
+      "term_deposit_balance",
+      "active_depositors"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.deposits_daily"
+    ],
+    "domain": "Deposits"
+  },
+  {
+    "name": "card_payment_volume",
+    "displayName": "Card Payment Volume",
+    "description": "Value of approved card payments for goods and services on the operating day — Humo and Uzcard, debit and credit-line cards, at POS terminals, contactless and online — excluding cash and money transfers.\n\n**How it is computed.** Row `metric_key = 'card_payment_volume'` of `datamart.metrics_daily`, from `datamart.card_operations_daily` for `oper_day` = the day: `sum(approved_amount_uzs - cash_like_amount_uzs) / 100` over all networks, channels, MCC groups and kinds — approved transactions whose merchant category is not cash-like (`ods__tranzaxis.mcc.is_cash_like`: 6010, 6011 cash; 6012, 4829 money transfers; 6051 quasi-cash).\n\n**Period.** Flow during the day (`period = 'day'`). Sum over days for a period total.\n\n**Unit.** UZS, converted from tiyin; `amount_uzs` is the UZS equivalent at the CBU rate of the transaction day.\n\n**Pitfalls.**\n\n- USD e-commerce payments are converted on the day: never sum the original `amount` of `ods__tranzaxis.card_transaction` across currencies.\n- Defined by the MCC flag, not by `transaction_kind`: MCC 6010 and 6051 have kind `purchase` but are cash-like, so excluded; gambling (7995) is high-risk but not cash-like, so included.\n- Declined transactions are excluded: `datamart.card_operations_daily.amount_uzs` includes them, `approved_amount_uzs` does not.\n- 0 on a day without approved payments; a missing row means the day was not loaded.",
+    "metricType": "SUM",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "UZS",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'card_payment_volume'\norder by report_date",
+    "computation": "select oper_day as report_date\n    , sum(approved_amount_uzs - cash_like_amount_uzs) / 100.0 as card_payment_volume_uzs\nfrom datamart.card_operations_daily\ngroup by oper_day\norder by oper_day",
+    "relatedMetrics": [
+      "card_decline_rate",
+      "active_customers",
+      "credit_line_utilisation"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.card_operations_daily"
+    ],
+    "domain": "Cards & Payments"
+  },
+  {
+    "name": "card_decline_rate",
+    "displayName": "Card Decline Rate",
+    "description": "Share of card transactions declined on the operating day — a service-quality and fraud-control signal.\n\n**How it is computed.** Row `metric_key = 'card_decline_rate'` of `datamart.metrics_daily`, from `datamart.card_operations_daily` for `oper_day` = the day: `sum(declined_count) / sum(transactions_count)` over all networks, channels, MCC groups and kinds. Count-based, not amount-based.\n\n**Period.** A ratio of the day's flows (`period = 'day'`). For a period divide summed declines by summed transactions; never average daily rates.\n\n**Unit.** Fraction: 0.10 = 10%. Null when there were no card transactions.\n\n**Pitfalls.**\n\n- Mixes customer-driven declines (insufficient funds, wrong PIN) with issuer declines (do not honour, suspected fraud): split by `ods__tranzaxis.card_transaction.decline_reason` before reading it as a processing problem.\n- Null (no transactions) is not 0%.",
+    "metricType": "RATIO",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "ratio (0.05 = 5%)",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'card_decline_rate'\norder by report_date",
+    "computation": "select oper_day as report_date\n    , sum(declined_count)::numeric / nullif(sum(transactions_count), 0) as card_decline_rate\nfrom datamart.card_operations_daily\ngroup by oper_day\norder by oper_day",
+    "relatedMetrics": [
+      "card_payment_volume"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.card_operations_daily"
+    ],
+    "domain": "Cards & Payments"
+  },
+  {
+    "name": "cards_issued",
+    "displayName": "Cards Issued",
+    "description": "Number of bank cards issued on the operating day: plastic, virtual and sticker cards of the Humo and Uzcard networks, for debit-card and credit-line contracts.\n\n**How it is computed.** Row `metric_key = 'cards_issued'` of `datamart.metrics_daily`, read directly from the ODS card table, not from a mart: `count(*)` of `ods__tranzaxis.card` whose `issued_at`, as an Asia/Tashkent date, is the day.\n\n**Period.** Flow during the day (`period = 'day'`). Sum over days for a period total.\n\n**Unit.** Count of cards (`unit = 'cards'`).\n\n**Pitfalls.**\n\n- Cards, not customers: a customer can hold several cards (an additional sticker card, a credit-line card).\n- The card table is current state: recomputing a past day counts only the cards still in it.\n- The issue date is a Tashkent calendar date: a card issued on a day that is not closed as an operating day is never counted.",
+    "metricType": "COUNT",
+    "unitOfMeasurement": "COUNT",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'cards_issued'\norder by report_date",
+    "computation": "select (issued_at at time zone 'Asia/Tashkent')::date as report_date\n    , count(*) as cards_issued\nfrom ods__tranzaxis.card\ngroup by 1\norder by 1",
+    "relatedMetrics": [
+      "active_customers",
+      "kyc_pass_rate"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.ods__tranzaxis.card"
+    ],
+    "domain": "Cards & Payments"
+  },
+  {
+    "name": "kyc_pass_rate",
+    "displayName": "KYC Pass Rate",
+    "description": "Pass rate of the identity checks (KYC) of mobile-app onboarding completed on the operating day.\n\n**How it is computed.** Row `metric_key = 'kyc_pass_rate'` of `datamart.metrics_daily` = `datamart.kyc_funnel_daily.onboarding_pass_rate` = `onboarding_succeeded / (onboarding_succeeded + onboarding_failed + onboarding_refused)`: onboarding attempts (`purpose = 'onboarding'` in `ods__mobile.kyc_attempt`) by the Asia/Tashkent date of `completed_at`. Attempts on hold for manual review (HOLD) are not in the denominator; new-device and password-reset checks are not counted.\n\n**Period.** A ratio of the day's flows (`period = 'day'`). For a period divide summed successes by summed completed attempts; never average daily rates.\n\n**Unit.** Fraction rounded to 4 decimals: 0.6 = 60%. Null when no onboarding attempt completed on the day.\n\n**Pitfalls.**\n\n- Attempts, not people: a customer who fails and retries counts once per attempt, so the share of people who eventually pass is higher.\n- Null is not 0%: check the day's counts in `datamart.kyc_funnel_daily` — all-zero counts can mean the mobile data for the day has not arrived.\n- Counted on the completion day; registrations and started attempts in the same funnel are counted on their own days.",
+    "metricType": "RATIO",
+    "unitOfMeasurement": "OTHER",
+    "customUnitOfMeasurement": "ratio (0.05 = 5%)",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'kyc_pass_rate'\norder by report_date",
+    "computation": "select report_date\n    , onboarding_succeeded\n    , onboarding_failed\n    , onboarding_refused\n    , onboarding_on_hold\n    , onboarding_succeeded::numeric\n        / nullif(onboarding_succeeded + onboarding_failed + onboarding_refused, 0) as kyc_pass_rate\nfrom datamart.kyc_funnel_daily\norder by report_date",
+    "relatedMetrics": [
+      "cards_issued",
+      "active_customers"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.kyc_funnel_daily"
+    ],
+    "domain": "Customers"
+  },
+  {
+    "name": "active_customers",
+    "displayName": "Active Customers (30 Days)",
+    "description": "Number of customers who used a bank card at least once in the 30 days up to and including the operating day.\n\n**How it is computed.** Row `metric_key = 'active_customers'` of `datamart.metrics_daily`, read directly from ODS: `count(distinct ods__tranzaxis.card.client_id)` over `ods__tranzaxis.card_transaction` joined to `ods__tranzaxis.card` on `card_id`, for `oper_day` from the day − 29 to the day. Any transaction counts, approved or declined.\n\n**Period.** `rolling_30_days`: a 30-calendar-day window ending on the day. Never sum or average it over days; an active count for a calendar month needs its own window.\n\n**Unit.** Count of customers (`unit = 'customers'`), as TranzAxis clients.\n\n**Pitfalls.**\n\n- Card activity only: customers who only hold a deposit or a loan, only log in to the app or only make iABS transfers are not counted.\n- Declined attempts count as activity.\n- Counted by TranzAxis `client_id`, not by person; `datamart.clients_id_xref` links it to PINFL.\n- Card transaction history in the DWH starts on 2026-08-01: windows ending before 2026-08-30 are incomplete and undercount (0 on 2026-07-31).",
+    "metricType": "COUNT",
+    "unitOfMeasurement": "COUNT",
+    "granularity": "DAY",
+    "expression": "select report_date, value\nfrom datamart.metrics_daily\nwhere metric_key = 'active_customers'\norder by report_date",
+    "computation": "select d.oper_day as report_date\n    , count(distinct c.client_id) as active_customers\nfrom ods__iabs.operating_day as d\n    inner join ods__tranzaxis.card_transaction as t\n        on t.oper_day between d.oper_day - 29 and d.oper_day\n    inner join ods__tranzaxis.card as c\n        on c.card_id = t.card_id\nwhere d.oper_day >= (select min(oper_day) from ods__tranzaxis.card_transaction)\ngroup by d.oper_day\norder by d.oper_day",
+    "relatedMetrics": [
+      "card_payment_volume",
+      "cards_issued",
+      "active_depositors",
+      "kyc_pass_rate"
+    ],
+    "assets": [
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.ods__tranzaxis.card_transaction",
+      "greenplum.dwh.ods__tranzaxis.card"
+    ],
+    "domain": "Customers"
+  }
+]

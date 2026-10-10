@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: datamart_regtech__overdue_loans_report
+    description: >
+      Monthly overdue-loans report to the Central Bank of Uzbekistan, as of the last calendar day of each month:
+      borrower categories (dictionary__overdue_report_rows) × overdue bands (dictionary__overdue_bands), with the number
+      of overdue contracts and their overdue principal and interest in thousand UZS. Every template cell is present,
+      zeros included. Built from datamart__contract_classification_daily (class overdue, band by FIFO days past due),
+      which is built from the TranzAxis ledger (datamart__tx_turnover). Checks: the bands add up to each row's total, and
+      the total overdue principal reconciles to the overdue-principal balance accounts 16400 and 16410 of the ledger.
+      Produced on month-end operating days; replaying the day replaces it.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: datamart_regtech__overdue_loans_report__one_cell_per_row_band
+          arguments:
+            combination_of_columns: [ "report_date", "row_code", "band_code" ]
+    columns:
+      - name: report_date
+        description: Reporting date — last calendar day of the month
+        data_tests:
+          - not_null:
+              name: datamart_regtech__overdue_loans_report__not_null_report_date
+      - name: row_code
+        description: Report row (borrower category), see dictionary__overdue_report_rows
+        data_tests:
+          - relationships:
+              name: datamart_regtech__overdue_loans_report__relationships_row_code
+              arguments:
+                to: ref("dictionary__overdue_report_rows")
+                field: row_code
+      - name: row_name
+        description: Name of the report row
+      - name: band_code
+        description: Overdue band (report column), see dictionary__overdue_bands; total = all bands
+        data_tests:
+          - relationships:
+              name: datamart_regtech__overdue_loans_report__relationships_band_code
+              arguments:
+                to: ref("dictionary__overdue_bands")
+                field: band_code
+      - name: band_name
+        description: Name of the overdue band
+      - name: contracts_count
+        description: Number of overdue contracts in the cell
+      - name: overdue_principal_thousand_uzs
+        description: Overdue principal, thousand UZS
+      - name: overdue_interest_thousand_uzs
+        description: Overdue interest, thousand UZS
+      - name: overdue_total_thousand_uzs
+        description: Overdue principal plus overdue interest, thousand UZS
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

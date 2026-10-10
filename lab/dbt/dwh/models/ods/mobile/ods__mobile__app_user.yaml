@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: ods__mobile__app_user
+    description: >
+      Mobile banking app accounts, one row per account, current state. One person may own more than one
+      account: the same PINFL on a different phone number is a known data-quality issue, so count people by
+      pinfl, not by user_id. verification_level is none until onboarding KYC succeeds, then full, and
+      core_customer_id then holds the iABS customer (ods__iabs__customer). Personal data of individuals
+      (phone, email, names, date of birth, PINFL) is in this table. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__mobile__app_user__equal_row_count
+          arguments:
+            compare_model: source("mobile", "app_user")
+    columns:
+      - name: user_id
+        description: Mobile account identifier (UUID); primary key
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_user_id
+          - unique:
+              name: ods__mobile__app_user__unique_user_id
+      - name: phone_number
+        description: Login phone number in +998 format. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_phone_number
+      - name: email
+        description: E-mail address; empty when the customer did not give one. Personal data.
+      - name: first_name
+        description: First name, Latin script. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_first_name
+      - name: last_name
+        description: Last name, Latin script. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_last_name
+      - name: middle_name
+        description: Middle name or patronymic, as written in the app (e.g. "Bunyod o'g'li"); empty when none. Personal data.
+      - name: date_of_birth
+        description: Date of birth. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_date_of_birth
+      - name: gender
+        description: "F (female) or M (male)"
+        data_tests:
+          - accepted_values:
+              name: ods__mobile__app_user__accepted_values_gender
+              arguments:
+                values: [ "F", "M" ]
+      - name: pinfl
+        description: 14-digit personal identification number (PINFL) of the individual. The same PINFL can sit on several accounts. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_pinfl
+      - name: lang
+        description: Interface language of the app; en (English), ru (Russian) or uz (Uzbek)
+        data_tests:
+          - accepted_values:
+              name: ods__mobile__app_user__accepted_values_lang
+              arguments:
+                values: [ "en", "ru", "uz" ]
+      - name: account_status
+        description: active or blocked (account status in the app)
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_account_status
+          - accepted_values:
+              name: ods__mobile__app_user__accepted_values_account_status
+              arguments:
+                values: [ "active", "blocked" ]
+      - name: verification_level
+        description: none until onboarding KYC succeeds, then full
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_verification_level
+          - accepted_values:
+              name: ods__mobile__app_user__accepted_values_verification_level
+              arguments:
+                values: [ "none", "full" ]
+      - name: core_customer_id
+        description: iABS customer_id (joins to ods__iabs__customer.customer_id), set when onboarding KYC succeeds; empty before
+      - name: created_at
+        description: Time the account was created in the app
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_created_at
+      - name: updated_at
+        description: Last change of the account row in the app
+        data_tests:
+          - not_null:
+              name: ods__mobile__app_user__not_null_updated_at
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

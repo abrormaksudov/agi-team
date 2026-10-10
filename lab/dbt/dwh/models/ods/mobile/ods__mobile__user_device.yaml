@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: ods__mobile__user_device
+    description: >
+      Link between a mobile app account and a device, one row per user and device, current state, with the
+      device's security signals (trusted, blocked, rooted, malware). Joins to ods__mobile__app_user on user_id
+      and to ods__mobile__device on device_id. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__mobile__user_device__equal_row_count
+          arguments:
+            compare_model: source("mobile", "user_device")
+    columns:
+      - name: user_device_id
+        description: Identifier of the user-device link; primary key
+        data_tests:
+          - not_null:
+              name: ods__mobile__user_device__not_null_user_device_id
+          - unique:
+              name: ods__mobile__user_device__unique_user_device_id
+      - name: user_id
+        description: Mobile account of the link (ods__mobile__app_user.user_id)
+        data_tests:
+          - not_null:
+              name: ods__mobile__user_device__not_null_user_id
+          - relationships:
+              name: ods__mobile__user_device__relationships_user_id
+              arguments:
+                to: ref("ods__mobile__app_user")
+                field: user_id
+              config:
+                severity: warn
+      - name: device_id
+        description: Device of the link (ods__mobile__device.device_id)
+        data_tests:
+          - not_null:
+              name: ods__mobile__user_device__not_null_device_id
+          - relationships:
+              name: ods__mobile__user_device__relationships_device_id
+              arguments:
+                to: ref("ods__mobile__device")
+                field: device_id
+              config:
+                severity: warn
+      - name: is_trusted
+        description: true when the device is trusted for this account (flag set in the app backend)
+      - name: is_blocked
+        description: true when the device is blocked for this account
+      - name: is_rooted
+        description: true when the device is rooted or jailbroken
+      - name: malware_detected
+        description: true when the last malware scan of the device found malware
+      - name: malware_scan_at
+        description: Time of the last malware scan of the device; empty when never scanned
+      - name: first_linked_at
+        description: Time the device was first linked to the account
+        data_tests:
+          - not_null:
+              name: ods__mobile__user_device__not_null_first_linked_at
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

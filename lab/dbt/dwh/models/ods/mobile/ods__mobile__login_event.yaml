@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: ods__mobile__login_event
+    description: >
+      Authentication events of the mobile banking app, one row per register, login or logout event, with the
+      result (auth_result). Holds the events whose occurred_at falls in the operating day. Joins to
+      ods__mobile__app_user on user_id and to ods__mobile__device on device_id. IP addresses are personal data.
+      Loaded per operating day; replaying a day replaces it.
+    columns:
+      - name: event_id
+        description: Identifier of the event; primary key
+        data_tests:
+          - not_null:
+              name: ods__mobile__login_event__not_null_event_id
+          - unique:
+              name: ods__mobile__login_event__unique_event_id
+      - name: user_id
+        description: Mobile account that the event belongs to (ods__mobile__app_user.user_id)
+        data_tests:
+          - not_null:
+              name: ods__mobile__login_event__not_null_user_id
+      - name: device_id
+        description: Device the event came from (ods__mobile__device.device_id)
+      - name: session_id
+        description: Identifier of the app session in which the event happened
+        data_tests:
+          - not_null:
+              name: ods__mobile__login_event__not_null_session_id
+      - name: event_type
+        description: register (new account), login or logout
+        data_tests:
+          - not_null:
+              name: ods__mobile__login_event__not_null_event_type
+          - accepted_values:
+              name: ods__mobile__login_event__accepted_values_event_type
+              arguments:
+                values: [ "register", "login", "logout" ]
+      - name: auth_result
+        description: Result of the authentication; success, wrong_password or otp_timeout
+        data_tests:
+          - not_null:
+              name: ods__mobile__login_event__not_null_auth_result
+          - accepted_values:
+              name: ods__mobile__login_event__accepted_values_auth_result
+              arguments:
+                values: [ "success", "wrong_password", "otp_timeout" ]
+      - name: ip_address
+        description: IP address the app connected from. Personal data.
+      - name: app_version
+        description: Version of the mobile app that sent the event
+        data_tests:
+          - not_null:
+              name: ods__mobile__login_event__not_null_app_version
+      - name: occurred_at
+        description: Time of the event (Uzbekistan time, UTC+5)
+        data_tests:
+          - not_null:
+              name: ods__mobile__login_event__not_null_occurred_at
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

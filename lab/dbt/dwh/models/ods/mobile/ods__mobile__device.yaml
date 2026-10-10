@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: ods__mobile__device
+    description: >
+      Devices seen by the mobile banking app, one row per physical device, current state. Who uses a device
+      and its security signals are in ods__mobile__user_device (joined by device_id). The device fingerprint
+      is personal data. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__mobile__device__equal_row_count
+          arguments:
+            compare_model: source("mobile", "device")
+    columns:
+      - name: device_id
+        description: Device identifier (UUID); primary key
+        data_tests:
+          - not_null:
+              name: ods__mobile__device__not_null_device_id
+          - unique:
+              name: ods__mobile__device__unique_device_id
+      - name: device_fingerprint
+        description: Hash fingerprint of the physical device as sent by the app. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__mobile__device__not_null_device_fingerprint
+      - name: platform
+        description: Operating system family; android or ios
+        data_tests:
+          - not_null:
+              name: ods__mobile__device__not_null_platform
+          - accepted_values:
+              name: ods__mobile__device__accepted_values_platform
+              arguments:
+                values: [ "android", "ios" ]
+      - name: device_model
+        description: Device model as reported by the phone, e.g. "Samsung Galaxy A34"
+      - name: os_version
+        description: Operating system version as reported by the phone, e.g. "Android 12"
+      - name: app_version
+        description: Version of the mobile app last seen on the device
+      - name: first_seen_at
+        description: Time the device was first seen by the app
+        data_tests:
+          - not_null:
+              name: ods__mobile__device__not_null_first_seen_at
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

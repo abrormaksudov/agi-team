@@ -1,0 +1,104 @@
+version: 2
+
+models:
+  - name: ods__mobile__kyc_attempt
+    description: >
+      Identity verification attempts in the mobile app, one row per attempt, current state. purpose is onboarding
+      (first identity check), new_device_login or password_reset. status HOLD means manual review, FAIL means the
+      customer may retry, REFUSE means rejected, SUCCESS means passed. The biometric selfie reference
+      (face_photo_ref) is personal data. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__mobile__kyc_attempt__equal_row_count
+          arguments:
+            compare_model: source("mobile", "kyc_attempt")
+    columns:
+      - name: attempt_id
+        description: Identifier of the verification attempt (UUID); primary key
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_attempt_id
+          - unique:
+              name: ods__mobile__kyc_attempt__unique_attempt_id
+      - name: user_id
+        description: Mobile account the attempt belongs to (ods__mobile__app_user.user_id)
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_user_id
+          - relationships:
+              name: ods__mobile__kyc_attempt__relationships_user_id
+              arguments:
+                to: ref("ods__mobile__app_user")
+                field: user_id
+              config:
+                severity: warn
+      - name: purpose
+        description: Why the check was run; onboarding, new_device_login or password_reset
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_purpose
+          - accepted_values:
+              name: ods__mobile__kyc_attempt__accepted_values_purpose
+              arguments:
+                values: [ "onboarding", "new_device_login", "password_reset" ]
+      - name: mode
+        description: first for the first identity check of an account, re_verification for a repeat check
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_mode
+          - accepted_values:
+              name: ods__mobile__kyc_attempt__accepted_values_mode
+              arguments:
+                values: [ "first", "re_verification" ]
+      - name: status
+        description: "Result of the attempt: SUCCESS (passed), HOLD (manual review), FAIL (customer may retry), REFUSE (rejected)"
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_status
+          - accepted_values:
+              name: ods__mobile__kyc_attempt__accepted_values_status
+              arguments:
+                values: [ "SUCCESS", "HOLD", "FAIL", "REFUSE" ]
+      - name: last_step
+        description: Last step the customer reached; product_selection, personal_data, document_scan, address or liveness, in flow order
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_last_step
+          - accepted_values:
+              name: ods__mobile__kyc_attempt__accepted_values_last_step
+              arguments:
+                values: [ "product_selection", "personal_data", "document_scan", "address", "liveness" ]
+      - name: fail_reason
+        description: Reason of a FAIL or REFUSE result; empty when the attempt did not fail
+        data_tests:
+          - accepted_values:
+              name: ods__mobile__kyc_attempt__accepted_values_fail_reason
+              arguments:
+                values: [ "document_expired", "document_unreadable", "face_mismatch", "liveness_failed", "nibbd_check_failed", "session_timeout" ]
+      - name: face_match_score
+        description: Similarity of the selfie to the document photo, from 0 to 1; higher is a closer match
+      - name: face_photo_ref
+        description: Storage reference of the biometric selfie. Personal data.
+      - name: aml_result
+        description: Result of the AML screening of the customer, GREEN or RED
+        data_tests:
+          - accepted_values:
+              name: ods__mobile__kyc_attempt__accepted_values_aml_result
+              arguments:
+                values: [ "GREEN", "RED" ]
+      - name: started_at
+        description: Time the attempt was started
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_started_at
+      - name: completed_at
+        description: Time the attempt was finished; empty while it is still open
+      - name: updated_at
+        description: Last change of the attempt row
+        data_tests:
+          - not_null:
+              name: ods__mobile__kyc_attempt__not_null_updated_at
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

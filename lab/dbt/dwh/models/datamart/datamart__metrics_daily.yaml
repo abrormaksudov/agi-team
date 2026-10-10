@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: datamart__metrics_daily
+    description: >
+      The bank's key figures for each operating day in one long table — one row per metric (and dimension, e.g. the
+      overdue band), computed from the marts. Amounts in UZS (converted from tiyin), ratios as fractions (0.05 = 5%).
+      period says how to read the value: stock = level at the end of the day, day = flow during the day,
+      rolling_30_days = the last 30 days up to the day. Pitfalls: a stock is not summed over days; ratios are not averaged
+      over days; card amounts use the UZS equivalent at the day's CBU rate. Definitions of each metric live in the
+      catalog's Metrics. Loaded per operating day.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: datamart__metrics_daily__unique_report_date_metric_key_dimension
+          arguments:
+            combination_of_columns: [ "report_date", "metric_key", "dimension" ]
+    columns:
+      - name: report_date
+        description: Operating day the figure is for
+        data_tests:
+          - not_null:
+              name: datamart__metrics_daily__not_null_report_date
+      - name: metric_key
+        description: >
+          Metric identifier — gross_loan_portfolio, overdue_portfolio, npl_90_ratio, write_offs,
+          microloan_disbursements_volume, microloan_disbursements_count, credit_line_utilisation, term_deposit_balance,
+          active_depositors, deposit_interest_expense, card_payment_volume, card_decline_rate, cards_issued,
+          kyc_pass_rate, active_customers
+        data_tests:
+          - not_null:
+              name: datamart__metrics_daily__not_null_metric_key
+          - accepted_values:
+              name: datamart__metrics_daily__accepted_values_metric_key
+              arguments:
+                values: [ "gross_loan_portfolio", "overdue_portfolio", "npl_90_ratio", "write_offs",
+                          "microloan_disbursements_volume", "microloan_disbursements_count", "credit_line_utilisation",
+                          "term_deposit_balance", "active_depositors", "deposit_interest_expense", "card_payment_volume",
+                          "card_decline_rate", "cards_issued", "kyc_pass_rate", "active_customers" ]
+      - name: dimension
+        description: Breakdown of the metric, e.g. the overdue band for overdue_portfolio; empty for the total
+      - name: period
+        description: stock (end-of-day level), day (flow during the day) or rolling_30_days
+        data_tests:
+          - accepted_values:
+              name: datamart__metrics_daily__accepted_values_period
+              arguments:
+                values: [ "stock", "day", "rolling_30_days" ]
+      - name: value
+        description: The figure, in unit
+      - name: unit
+        description: UZS, ratio (fraction), contracts, customers or cards
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

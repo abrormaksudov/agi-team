@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: datamart__card_operations_daily
+    description: >
+      Card activity of each operating day, one row per day, card network, channel, MCC reporting group, and kind of
+      operation. Counts of all transactions, approved and declined (status approved or declined), amounts in UZS tiyin
+      (1/100 UZS), cash-like and high-risk merchant categories from ods__tranzaxis__mcc, and distinct cards. Built from
+      ods__tranzaxis__card_transaction joined to ods__tranzaxis__card and ods__tranzaxis__mcc. Loaded per operating day
+      with delete+insert on oper_day; replaying a day replaces it.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: datamart__card_operations_daily__unique_grain
+          arguments:
+            combination_of_columns: [ "oper_day", "network", "channel", "mcc_group", "transaction_kind" ]
+      - dbt_utils.expression_is_true:
+          name: datamart__card_operations_daily__approved_plus_declined_within_count
+          arguments:
+            expression: "approved_count + declined_count <= transactions_count"
+    columns:
+      - name: oper_day
+        description: Operating day of the transactions
+        data_tests:
+          - not_null:
+              name: datamart__card_operations_daily__not_null_oper_day
+      - name: network
+        description: Payment network of the card, HUMO or UZCARD
+        data_tests:
+          - accepted_values:
+              name: datamart__card_operations_daily__accepted_values_network
+              arguments:
+                values: [ "HUMO", "UZCARD" ]
+      - name: channel
+        description: Channel of the transaction, pos (terminal), ecom (online), atm or contactless
+        data_tests:
+          - accepted_values:
+              name: datamart__card_operations_daily__accepted_values_channel
+              arguments:
+                values: [ "pos", "ecom", "atm", "contactless" ]
+      - name: mcc_group
+        description: Reporting group of the merchant category (ods__tranzaxis__mcc.category_group)
+        data_tests:
+          - accepted_values:
+              name: datamart__card_operations_daily__accepted_values_mcc_group
+              arguments:
+                values: [ "other", "transport", "health", "apparel", "travel", "grocery", "food_service", "digital", "telecom", "government", "electronics", "education", "cash", "transfers", "online_retail", "fuel", "utilities", "insurance", "gambling" ]
+      - name: transaction_kind
+        description: Kind of operation, purchase, cash_withdrawal or transfer
+        data_tests:
+          - accepted_values:
+              name: datamart__card_operations_daily__accepted_values_transaction_kind
+              arguments:
+                values: [ "purchase", "cash_withdrawal", "transfer" ]
+      - name: transactions_count
+        description: All transactions of the grain, approved and declined
+      - name: approved_count
+        description: Transactions with status approved
+      - name: declined_count
+        description: Transactions with status declined
+      - name: amount_uzs
+        description: Amount of all transactions in UZS tiyin, approved and declined
+      - name: approved_amount_uzs
+        description: Amount of the approved transactions in UZS tiyin
+      - name: cash_like_amount_uzs
+        description: Amount in UZS tiyin of the approved transactions whose merchant category is cash-like (is_cash_like)
+      - name: high_risk_count
+        description: Transactions, approved or declined, whose merchant category is high-risk (is_high_risk)
+      - name: cards_count
+        description: Distinct cards with at least one transaction of the grain
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

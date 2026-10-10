@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: datamart__kyc_funnel_daily
+    description: >
+      Mobile onboarding funnel of each operating day: one row per day from registration through KYC attempts to the
+      first TranzAxis product. Events are counted on their bank day (Asia/Tashkent). Counts are of attempts (KYC
+      started or completed that day) and of app accounts (created that day). onboarding_pass_rate is succeeded over
+      the completed onboarding attempts that passed or failed or were refused; HOLD (manual review) is not in the
+      denominator. Loaded per operating day, delete+insert on report_date: replaying a day replaces its row.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          name: datamart__kyc_funnel_daily__pass_rate_between_0_and_1
+          arguments:
+            expression: "onboarding_pass_rate is null or onboarding_pass_rate between 0 and 1"
+    columns:
+      - name: report_date
+        description: Operating day the row describes
+        data_tests:
+          - not_null:
+              name: datamart__kyc_funnel_daily__not_null_report_date
+          - unique:
+              name: datamart__kyc_funnel_daily__unique_report_date
+      - name: registrations
+        description: Mobile app accounts created on the day
+      - name: onboarding_started
+        description: Onboarding KYC attempts (purpose onboarding) started on the day, any status
+      - name: onboarding_succeeded
+        description: Onboarding KYC attempts completed on the day with status SUCCESS
+      - name: onboarding_failed
+        description: Onboarding KYC attempts completed on the day with status FAIL (the customer may retry)
+      - name: onboarding_refused
+        description: Onboarding KYC attempts completed on the day with status REFUSE (rejected)
+      - name: onboarding_on_hold
+        description: Onboarding KYC attempts started on the day that went to manual review (status HOLD)
+      - name: device_checks
+        description: New-device login KYC attempts (purpose new_device_login) started on the day
+      - name: password_reset_checks
+        description: Password-reset KYC attempts (purpose password_reset) started on the day
+      - name: first_products
+        description: TranzAxis clients whose earliest contract opened on the day, i.e. first product
+      - name: onboarding_pass_rate
+        description: onboarding_succeeded / (onboarding_succeeded + onboarding_failed + onboarding_refused), 0 to 1; null when the denominator is 0
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

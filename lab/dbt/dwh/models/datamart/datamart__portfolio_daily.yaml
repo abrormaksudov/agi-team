@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: datamart__portfolio_daily
+    description: >
+      Credit exposure of every borrower at the end of each operating day: one row per TranzAxis client with at least one
+      open credit contract, summed over the client's credit lines and microloans from
+      datamart__contract_classification_daily. Gives the borrower's worst class and NPL flag (more than 90 days past due).
+      Amounts in tiyin. Loaded per operating day.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: datamart__portfolio_daily__unique_report_date_client_id
+          arguments:
+            combination_of_columns: [ "report_date", "client_id" ]
+    columns:
+      - name: report_date
+        description: Operating day (end of day)
+        data_tests:
+          - not_null:
+              name: datamart__portfolio_daily__not_null_report_date
+      - name: client_id
+        description: TranzAxis client (borrower)
+        data_tests:
+          - not_null:
+              name: datamart__portfolio_daily__not_null_client_id
+      - name: pinfl
+        description: Borrower's PINFL (14 digits). Personal data.
+      - name: iabs_customer_code
+        description: Borrower's 8-digit iABS customer code
+      - name: contracts_count
+        description: Open credit contracts of the borrower
+      - name: credit_lines_count
+        description: Open credit lines
+      - name: microloans_count
+        description: Open microloans
+      - name: principal_balance
+        description: Current principal over all contracts, tiyin
+      - name: overdue_principal_balance
+        description: Overdue principal over all contracts, tiyin
+      - name: overdue_interest_balance
+        description: Overdue interest over all contracts, tiyin
+      - name: penalty_balance
+        description: Penalties receivable, tiyin
+      - name: total_exposure
+        description: Principal + overdue principal + overdue interest + penalties, tiyin
+      - name: max_days_past_due
+        description: Highest FIFO days past due over the borrower's contracts
+      - name: worst_classification
+        description: The borrower's worst contract class (written_off, then overdue, then the others)
+      - name: is_npl
+        description: Non-performing — some contract is more than 90 days past due
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

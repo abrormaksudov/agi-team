@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: datamart__tx_turnover
+    description: >
+      Daily movement of every TranzAxis contract account, one row per account and operating day with movement,
+      labelled with its contract, product and account role (principal, interest, overdue principal, overdue interest,
+      penalty, write-off, limit, settlement) and its 5-digit balance account. Amounts in tiyin (1/100 UZS); all
+      TranzAxis contracts are in UZS. The ledger every credit mart is built from. Loaded per operating day; replaying a
+      day replaces it.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: datamart__tx_turnover__unique_account_id_oper_day
+          arguments:
+            combination_of_columns: [ "account_id", "oper_day" ]
+      - dbt_utils.expression_is_true:
+          name: datamart__tx_turnover__balance_roll_forward
+          arguments:
+            expression: "opening_balance + debit_turnover - credit_turnover = closing_balance"
+    columns:
+      - name: oper_day
+        description: Operating day of the movement
+        data_tests:
+          - not_null:
+              name: datamart__tx_turnover__not_null_oper_day
+      - name: account_id
+        description: TranzAxis account identifier
+        data_tests:
+          - not_null:
+              name: datamart__tx_turnover__not_null_account_id
+      - name: account_number
+        description: 20-digit account number (balance account 5 + currency 3 + check digit 1 + customer code 8 + sequence 3)
+      - name: contract_id
+        description: TranzAxis contract the account belongs to
+        data_tests:
+          - not_null:
+              name: datamart__tx_turnover__not_null_contract_id
+      - name: contract_type
+        description: Product family of the contract — credit_line (revolving card credit line), microloan (annuity loan) or debit_card
+      - name: account_role
+        description: >
+          What the account holds for the contract: principal, interest (accrued, not yet due), overdue_principal,
+          overdue_interest, penalty, write_off / write_off_interest (memorandum after write-off), limit (unused credit
+          line), settlement (debit-card account)
+        data_tests:
+          - accepted_values:
+              name: datamart__tx_turnover__accepted_values_account_role
+              arguments:
+                values: [ "principal", "interest", "overdue_principal", "overdue_interest", "penalty", "write_off",
+                          "write_off_interest", "limit", "settlement" ]
+      - name: balance_account
+        description: >
+          5-digit balance account of the chart of accounts, e.g. 16400 / 16410 overdue principal of credit lines /
+          microloans, 16600 / 16610 overdue interest, 16700 penalties, 91000 written-off loans (off-balance)
+      - name: currency_code
+        description: ISO currency code of the account (UZS)
+      - name: opening_balance
+        description: Balance at the start of the operating day, tiyin
+      - name: debit_turnover
+        description: Debits of the day, tiyin — for asset accounts an increase (drawdown, new overdue slice, accrual)
+      - name: credit_turnover
+        description: Credits of the day, tiyin — for asset accounts a decrease (repayment, transfer to overdue, write-off)
+      - name: closing_balance
+        description: Balance at the end of the operating day, tiyin
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

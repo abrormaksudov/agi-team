@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: dictionary__overdue_report_rows
+    description: >
+      Template rows of the Central Bank overdue-loans report: one row per borrower category the report must show, in
+      report order. A row with an empty contract_type covers every product of its borrower type. Maintained in code;
+      full reload every operating day.
+    columns:
+      - name: row_code
+        description: Code of the report row as printed in the CB template
+        data_tests:
+          - not_null:
+              name: dictionary__overdue_report_rows__not_null_row_code
+          - unique:
+              name: dictionary__overdue_report_rows__unique_row_code
+      - name: row_name
+        description: Name of the report row as printed in the CB template
+      - name: borrower_type
+        description: individual or legal_entity
+      - name: contract_type
+        description: Product the row is limited to (microloan, credit_line); empty = all products of the borrower type
+      - name: sort_order
+        description: Position of the row in the report
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

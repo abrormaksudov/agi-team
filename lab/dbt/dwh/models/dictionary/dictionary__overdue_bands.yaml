@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: dictionary__overdue_bands
+    description: >
+      Overdue bands (columns) of the Central Bank overdue-loans report, by days past due, plus the total column.
+      A loan falls into the band of its FIFO days past due. Maintained in code; full reload every operating day.
+    columns:
+      - name: band_code
+        description: Band code, also used as overdue_band in datamart__contract_classification_daily
+        data_tests:
+          - not_null:
+              name: dictionary__overdue_bands__not_null_band_code
+          - unique:
+              name: dictionary__overdue_bands__unique_band_code
+      - name: band_name
+        description: Column heading as printed in the CB template
+      - name: min_days
+        description: Lowest days past due in the band (inclusive); empty for the total column
+      - name: max_days
+        description: Highest days past due in the band (inclusive); empty for the open-ended last band and the total
+      - name: sort_order
+        description: Position of the column in the report
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

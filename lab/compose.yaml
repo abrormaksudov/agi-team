@@ -1,0 +1,53 @@
+name: agi-lab
+
+x-source-db: &source-db
+  image: postgres:17.11-bookworm
+  restart: unless-stopped
+  command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U admin -d $${POSTGRES_DB}"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+
+services:
+  iabs:
+    <<: *source-db
+    environment:
+      POSTGRES_DB: iabs
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - ./sources/init:/docker-entrypoint-initdb.d:ro
+      - iabs-data:/var/lib/postgresql/data
+
+  mobile:
+    <<: *source-db
+    environment:
+      POSTGRES_DB: mobile
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - ./sources/init:/docker-entrypoint-initdb.d:ro
+      - mobile-data:/var/lib/postgresql/data
+
+  tranzaxis:
+    <<: *source-db
+    environment:
+      POSTGRES_DB: tranzaxis
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "127.0.0.1:5436:5432"
+    volumes:
+      - ./sources/init:/docker-entrypoint-initdb.d:ro
+      - tranzaxis-data:/var/lib/postgresql/data
+
+volumes:
+  iabs-data:
+  mobile-data:
+  tranzaxis-data:

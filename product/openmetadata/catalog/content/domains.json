@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Lending",
+    "displayName": "Lending",
+    "domainType": "Aggregate",
+    "owner": "data_platform",
+    "description": "Retail credit: credit lines and microloans from TranzAxis — contracts, their accounts and daily turnover, statement cycles, repayment schedules, delinquency — and the marts built on them: the daily contract classification and the borrower portfolio.",
+    "assets": [
+      "tranzaxis.tranzaxis.tx.contract", "tranzaxis.tranzaxis.tx.contract_account", "tranzaxis.tranzaxis.tx.account_turnover",
+      "tranzaxis.tranzaxis.tx.credit_line_cycle", "tranzaxis.tranzaxis.tx.payment_schedule", "tranzaxis.tranzaxis.tx.delinquency_history",
+      "greenplum.dwh.*__tranzaxis.contract", "greenplum.dwh.*__tranzaxis.contract_account", "greenplum.dwh.*__tranzaxis.account_turnover",
+      "greenplum.dwh.*__tranzaxis.credit_line_cycle", "greenplum.dwh.*__tranzaxis.payment_schedule", "greenplum.dwh.*__tranzaxis.delinquency_history",
+      "greenplum.dwh.datamart.tx_turnover", "greenplum.dwh.datamart.contract_classification_tech",
+      "greenplum.dwh.datamart.contract_classification_daily", "greenplum.dwh.datamart.portfolio_daily"
+    ]
+  },
+  {
+    "name": "Deposits",
+    "displayName": "Deposits",
+    "domainType": "Aggregate",
+    "owner": "data_platform",
+    "description": "Term deposits of individuals in iABS: contracts, their balances and accrued interest by operating day.",
+    "assets": [
+      "iabs.iabs.core.deposit_contract", "greenplum.dwh.*__iabs.deposit_contract", "greenplum.dwh.datamart.deposits_daily"
+    ]
+  },
+  {
+    "name": "Cards & Payments",
+    "displayName": "Cards & Payments",
+    "domainType": "Aggregate",
+    "owner": "data_platform",
+    "description": "Humo and Uzcard cards and their transactions from TranzAxis (by channel and merchant category), payment documents from iABS, and the daily card-operations mart.",
+    "assets": [
+      "tranzaxis.tranzaxis.tx.card", "tranzaxis.tranzaxis.tx.card_transaction", "tranzaxis.tranzaxis.tx.mcc",
+      "greenplum.dwh.*__tranzaxis.card", "greenplum.dwh.*__tranzaxis.card_transaction", "greenplum.dwh.*__tranzaxis.mcc",
+      "iabs.iabs.core.payment_document", "greenplum.dwh.*__iabs.payment_document",
+      "greenplum.dwh.datamart.card_operations_daily"
+    ]
+  },
+  {
+    "name": "Customers",
+    "displayName": "Customers",
+    "domainType": "Aggregate",
+    "owner": "data_platform",
+    "description": "Who the bank's customers are, across three systems: the iABS customer master (individuals and companies), the TranzAxis client, and the mobile app (accounts, devices, KYC, logins); joined by PINFL in the identity hub clients_id_xref. Holds most of the bank's personal data.",
+    "assets": [
+      "iabs.iabs.core.customer", "iabs.iabs.core.customer_individual", "iabs.iabs.core.customer_company",
+      "greenplum.dwh.*__iabs.customer", "greenplum.dwh.*__iabs.customer_individual", "greenplum.dwh.*__iabs.customer_company",
+      "tranzaxis.tranzaxis.tx.client", "greenplum.dwh.*__tranzaxis.client",
+      "mobile.mobile.*.*", "greenplum.dwh.*__mobile.*",
+      "greenplum.dwh.datamart.clients_id_xref", "greenplum.dwh.datamart.kyc_funnel_daily"
+    ]
+  },
+  {
+    "name": "Core Ledger",
+    "displayName": "Core Ledger",
+    "domainType": "Source-aligned",
+    "owner": "core_banking",
+    "description": "The iABS core ledger and its reference data: accounts, daily balances and turnover, the chart of balance accounts, currencies and CBU exchange rates, operating days, branches, regions and districts.",
+    "assets": [
+      "iabs.iabs.core.account", "iabs.iabs.core.account_balance", "iabs.iabs.core.balance_account", "iabs.iabs.core.currency",
+      "iabs.iabs.core.exchange_rate", "iabs.iabs.core.operating_day", "iabs.iabs.core.branch", "iabs.iabs.core.region", "iabs.iabs.core.district",
+      "greenplum.dwh.*__iabs.account", "greenplum.dwh.*__iabs.account_balance", "greenplum.dwh.*__iabs.balance_account",
+      "greenplum.dwh.*__iabs.currency", "greenplum.dwh.*__iabs.exchange_rate", "greenplum.dwh.*__iabs.operating_day",
+      "greenplum.dwh.*__iabs.branch", "greenplum.dwh.*__iabs.region", "greenplum.dwh.*__iabs.district"
+    ]
+  },
+  {
+    "name": "Regulatory Reporting",
+    "displayName": "Regulatory Reporting",
+    "domainType": "Consumer-aligned",
+    "owner": "regulatory_reporting",
+    "description": "Reports to the Central Bank of Uzbekistan and the bank's key figures: the monthly Overdue Loans Report with its template dictionaries, and the daily metrics table it shares its numbers with.",
+    "assets": [
+      "greenplum.dwh.datamart_regtech.overdue_loans_report", "greenplum.dwh.dictionary.overdue_bands",
+      "greenplum.dwh.dictionary.overdue_report_rows", "greenplum.dwh.datamart.metrics_daily"
+    ]
+  }
+]

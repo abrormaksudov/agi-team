@@ -1,0 +1,43 @@
+{
+  "tiers": {
+    "Tier.Tier1": [
+      "greenplum.dwh.datamart_regtech.overdue_loans_report",
+      "greenplum.dwh.datamart.contract_classification_daily",
+      "greenplum.dwh.datamart.metrics_daily",
+      "greenplum.dwh.datamart.clients_id_xref"
+    ],
+    "Tier.Tier2": [
+      "greenplum.dwh.datamart.contract_classification_tech", "greenplum.dwh.datamart.portfolio_daily",
+      "greenplum.dwh.datamart.tx_turnover", "greenplum.dwh.datamart.deposits_daily",
+      "greenplum.dwh.datamart.card_operations_daily", "greenplum.dwh.datamart.kyc_funnel_daily",
+      "greenplum.dwh.dictionary.*"
+    ],
+    "Tier.Tier3": [
+      "greenplum.dwh.ods__*.*"
+    ]
+  },
+  "pii": {
+    "tag": "PII.Sensitive",
+    "reason": "Personal data of an individual under the Law of the Republic of Uzbekistan \"On Personal Data\"",
+    "sourceColumns": [
+      "mobile.mobile.users.app_user.phone_number", "mobile.mobile.users.app_user.email", "mobile.mobile.users.app_user.first_name",
+      "mobile.mobile.users.app_user.last_name", "mobile.mobile.users.app_user.middle_name", "mobile.mobile.users.app_user.date_of_birth",
+      "mobile.mobile.users.app_user.pinfl", "mobile.mobile.users.login_event.ip_address", "mobile.mobile.devices.device.device_fingerprint",
+      "mobile.mobile.kyc.kyc_attempt.face_photo_ref",
+      "iabs.iabs.core.customer.tax_id",
+      "iabs.iabs.core.customer_individual.pinfl", "iabs.iabs.core.customer_individual.last_name", "iabs.iabs.core.customer_individual.first_name",
+      "iabs.iabs.core.customer_individual.middle_name", "iabs.iabs.core.customer_individual.birth_date",
+      "iabs.iabs.core.customer_individual.passport_series", "iabs.iabs.core.customer_individual.passport_number",
+      "iabs.iabs.core.customer_individual.passport_issued", "iabs.iabs.core.customer_individual.address",
+      "iabs.iabs.core.customer_individual.phone", "iabs.iabs.core.customer_individual.monthly_income",
+      "iabs.iabs.core.customer_company.director_name", "iabs.iabs.core.customer_company.director_pinfl",
+      "iabs.iabs.core.payment_document.payer_name", "iabs.iabs.core.payment_document.payee_name",
+      "tranzaxis.tranzaxis.tx.client.pinfl", "tranzaxis.tranzaxis.tx.client.full_name", "tranzaxis.tranzaxis.tx.client.birth_date",
+      "tranzaxis.tranzaxis.tx.client.phone", "tranzaxis.tranzaxis.tx.card.pan_hash"
+    ],
+    "renames": {
+      "date_of_birth": ["birth_date"],
+      "full_name": ["last_name", "first_name", "middle_name"]
+    }
+  }
+}

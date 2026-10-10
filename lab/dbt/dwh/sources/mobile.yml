@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: mobile
+    description: mobile — in-house mobile banking backend, one schema per microservice (users, devices, kyc); read live through PXF
+    schema: ext__mobile
+    tables:
+      - name: app_user
+        description: PXF external table over mobile users.app_user
+      - name: login_event
+        description: PXF external table over mobile users.login_event
+      - name: device
+        description: PXF external table over mobile devices.device
+      - name: user_device
+        description: PXF external table over mobile devices.user_device
+      - name: kyc_attempt
+        description: PXF external table over mobile kyc.kyc_attempt

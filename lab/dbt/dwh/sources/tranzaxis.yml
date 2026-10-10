@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: tranzaxis
+    description: TranzAxis (Compass Plus), retail credit and card engine — clients, contracts, credit lines, microloans, cards and card transactions; read live through PXF
+    schema: ext__tranzaxis
+    tables:
+      - name: client
+        description: PXF external table over tranzaxis tx.client
+      - name: contract
+        description: PXF external table over tranzaxis tx.contract
+      - name: contract_account
+        description: PXF external table over tranzaxis tx.contract_account
+      - name: account_turnover
+        description: PXF external table over tranzaxis tx.account_turnover
+      - name: credit_line_cycle
+        description: PXF external table over tranzaxis tx.credit_line_cycle
+      - name: payment_schedule
+        description: PXF external table over tranzaxis tx.payment_schedule
+      - name: delinquency_history
+        description: PXF external table over tranzaxis tx.delinquency_history
+      - name: card
+        description: PXF external table over tranzaxis tx.card
+      - name: card_transaction
+        description: PXF external table over tranzaxis tx.card_transaction
+      - name: mcc
+        description: PXF external table over tranzaxis tx.mcc

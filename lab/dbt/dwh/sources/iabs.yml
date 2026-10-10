@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: iabs
+    description: iABS (Fido-Biznes), core banking system — customer master, accounts and the core ledger; read live through PXF
+    schema: ext__iabs
+    tables:
+      - name: customer
+        description: PXF external table over iabs core.customer
+      - name: account_balance
+        description: PXF external table over iabs core.account_balance
+      - name: region
+        description: PXF external table over iabs core.region
+      - name: district
+        description: PXF external table over iabs core.district
+      - name: branch
+        description: PXF external table over iabs core.branch
+      - name: currency
+        description: PXF external table over iabs core.currency
+      - name: balance_account
+        description: PXF external table over iabs core.balance_account
+      - name: operating_day
+        description: PXF external table over iabs core.operating_day
+      - name: exchange_rate
+        description: PXF external table over iabs core.exchange_rate
+      - name: customer_individual
+        description: PXF external table over iabs core.customer_individual
+      - name: customer_company
+        description: PXF external table over iabs core.customer_company
+      - name: account
+        description: PXF external table over iabs core.account
+      - name: payment_document
+        description: PXF external table over iabs core.payment_document
+      - name: deposit_contract
+        description: PXF external table over iabs core.deposit_contract

@@ -1,0 +1,12 @@
+dwh:
+  target: lab
+  outputs:
+    lab:
+      type: postgres
+      host: '{{ env_var("DBT_HOST", "greenplum") }}'
+      user: gpadmin
+      password: gpadmin
+      port: '{{ env_var("DBT_PORT", "5432") | as_number }}'
+      dbname: dwh
+      schema: dbt
+      threads: 4

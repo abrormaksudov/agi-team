@@ -1,0 +1,39 @@
+name: dwh
+
+config-version: 2
+version: 1.0.0
+
+profile: dwh
+
+model-paths: [ "models", "sources" ]
+test-paths: [ "tests" ]
+macro-paths: [ "macros" ]
+
+target-path: "target"
+log-path: "logs"
+packages-install-path: "{{ env_var('DBT_PACKAGES_INSTALL_PATH', 'dbt_packages') }}"
+
+clean-targets: [ target, dbt_packages, logs ]
+
+quoting:
+  database: true
+  schema: true
+  identifier: true
+
+models:
+  +pre-hook: [ "set statement_mem = '500MB';" ]
+  # the lab plays operating days minutes apart, so the 6-hour throttle would skip every day after the first
+  +post-hook: [ "{{ smart_analyze(interval_hours=0) }}" ]
+  dwh:
+    ods:
+      # marts name their owner in their own config; the catalog assigns it from meta.owner
+      +meta:
+        owner: data_platform
+
+vars:
+  dwh_job_id: manual
+  load_from_datetime: '2100-01-01T00:00:00+00:00'
+  load_to_datetime: '2100-01-01T00:00:00+00:00'
+  oper_day: '2100-01-01'
+  # first operating day of the lab: its source files carry the whole history, so day-sliced models load every day up to it
+  history_day: '2026-07-31'

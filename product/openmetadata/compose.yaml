@@ -93,7 +93,50 @@ services:
       timeout: 5s
       retries: 30
 
+  ingestion:
+    build: ./ingestion
+    image: agi-catalog/ingestion:2.0.5-pr32031
+    restart: unless-stopped
+    entrypoint: /bin/bash
+    command: /opt/airflow/ingestion_dependency.sh
+    environment:
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_SCHEME: postgresql+psycopg2
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ingestion-dag-configs:/opt/airflow/dag_generated_configs
+      - ingestion-dags:/opt/airflow/dags
+      - ingestion-tmp:/tmp
+      # the lab's dbt artifacts (manifest.json, run_results.json) for the dbt pipeline
+      - lab-dbt-state:/opt/lab/dbt-state:ro
+    networks:
+      - default
+      - lab
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      openmetadata-server:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
 volumes:
   postgres-data:
   search-data:
   jwt-keys:
+  ingestion-dag-configs:
+  ingestion-dags:
+  ingestion-tmp:
+  lab-dbt-state:
+    external: true
+    name: agi-lab_dbt-state
+
+networks:
+  lab:
+    external: true
+    name: agi-lab_default

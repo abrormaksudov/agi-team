@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property>
+        <name>jdbc.driver</name>
+        <value>org.postgresql.Driver</value>
+    </property>
+    <property>
+        <name>jdbc.url</name>
+        <value>jdbc:postgresql://iabs:5432/iabs</value>
+    </property>
+    <property>
+        <name>jdbc.user</name>
+        <value>pxf</value>
+    </property>
+    <property>
+        <name>jdbc.password</name>
+        <value>pxf</value>
+    </property>
+</configuration>

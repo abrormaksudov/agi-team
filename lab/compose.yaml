@@ -47,7 +47,34 @@ services:
       - ./sources/init:/docker-entrypoint-initdb.d:ro
       - tranzaxis-data:/var/lib/postgresql/data
 
+  greenplum:
+    build: ./greenplum
+    image: agi-lab/greenplum:6.29.11
+    restart: unless-stopped
+    hostname: greenplum
+    environment:
+      GREENPLUM_DEPLOYMENT: singlenode
+      GREENPLUM_DATABASE_NAME: dwh
+      GREENPLUM_PASSWORD: gpadmin
+      GREENPLUM_PXF_ENABLE: "true"
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - greenplum-data:/data
+    shm_size: 256m
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /data/.lab-ready && /usr/local/greenplum-db/bin/pg_isready -h 127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 300s
+
 volumes:
   iabs-data:
   mobile-data:
   tranzaxis-data:
+  greenplum-data:

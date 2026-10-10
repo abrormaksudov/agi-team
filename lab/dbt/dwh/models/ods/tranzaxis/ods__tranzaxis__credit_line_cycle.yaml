@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__credit_line_cycle
+    description: >
+      Monthly statement of a TranzAxis credit line, one row per contract and statement date. The cycle runs
+      from cycle_start_date to statement_date; the due date is 20 days after the statement with a 20-day
+      grace period. Minimum payment is 10 percent of the principal, at least 100,000 UZS, plus interest and
+      overdue. overdue_start_date is set when the minimum was missed. Amounts in tiyin (1/100 UZS). Full
+      reload from the source every operating day.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: ods__tranzaxis__credit_line_cycle__unique_contract_id_statement_date
+          arguments:
+            combination_of_columns: [ "contract_id", "statement_date" ]
+      - dbt_utils.equal_rowcount:
+          name: ods__tranzaxis__credit_line_cycle__equal_row_count
+          arguments:
+            compare_model: source("tranzaxis", "credit_line_cycle")
+    columns:
+      - name: contract_id
+        description: Credit line contract (ods__tranzaxis__contract.contract_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_contract_id
+          - relationships:
+              name: ods__tranzaxis__credit_line_cycle__relationships_contract_id
+              arguments:
+                to: ref("ods__tranzaxis__contract")
+                field: contract_id
+              config:
+                severity: warn
+      - name: statement_date
+        description: Date of the monthly statement, the last day of the cycle
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_statement_date
+      - name: cycle_start_date
+        description: First day of the statement cycle
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_cycle_start_date
+      - name: due_date
+        description: Date the minimum payment is due, 20 days after the statement date
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_due_date
+      - name: grace_end_date
+        description: End of the grace period of the statement, 20 days after the statement date
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_grace_end_date
+      - name: statement_balance
+        description: Balance owed at the statement date, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_statement_balance
+      - name: min_payment
+        description: Minimum payment due, in tiyin; 10 percent of the principal, at least 100,000 UZS, plus interest and overdue
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_min_payment
+      - name: used_limit
+        description: Credit limit used at the statement date, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_used_limit
+      - name: paid_amount
+        description: Amount paid towards the statement during the cycle, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__credit_line_cycle__not_null_paid_amount
+      - name: overdue_start_date
+        description: Date the minimum payment was missed and the overdue started; empty when the statement is paid on time
+      - name: last_payment_date
+        description: Date of the last payment towards the statement; empty when nothing was paid
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

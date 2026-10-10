@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__account_turnover
+    description: >
+      Daily balance and turnover of TranzAxis contract accounts, one row per account and operating day, only
+      on days the account moved; the balance on a quiet day is the latest row before it. Amounts in tiyin
+      (1/100 UZS). This is TranzAxis's own ledger of contract accounts; the credit marts and the Overdue Loans
+      Report reconcile to it through datamart__tx_turnover. Loaded per operating day; replaying a day replaces it.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: ods__tranzaxis__account_turnover__unique_account_id_oper_day
+          arguments:
+            combination_of_columns: [ "account_id", "oper_day" ]
+      - dbt_utils.expression_is_true:
+          name: ods__tranzaxis__account_turnover__balance_roll_forward
+          arguments:
+            expression: "opening_balance + debit_turnover - credit_turnover = closing_balance"
+    columns:
+      - name: account_id
+        description: Account identifier (ods__tranzaxis__contract_account.account_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__account_turnover__not_null_account_id
+      - name: oper_day
+        description: Operating day of the movement
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__account_turnover__not_null_oper_day
+      - name: opening_balance
+        description: Balance at the start of the operating day, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__account_turnover__not_null_opening_balance
+      - name: debit_turnover
+        description: Sum of debit postings during the day, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__account_turnover__not_null_debit_turnover
+      - name: credit_turnover
+        description: Sum of credit postings during the day, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__account_turnover__not_null_credit_turnover
+      - name: closing_balance
+        description: Balance at the end of the operating day, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__account_turnover__not_null_closing_balance
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

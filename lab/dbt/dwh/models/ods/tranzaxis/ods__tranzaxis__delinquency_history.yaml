@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__delinquency_history
+    description: >
+      Delinquency history of TranzAxis contracts: one row per contract and day on which its state changed
+      (current, dpd_1_30, dpd_31_60, dpd_61_90, dpd_91_180, dpd_181_360, written_off), with the previous state
+      and the days past due. A contract is written off at 361 days past due. The current state of a contract
+      is its latest row. Loaded per operating day; replaying a day replaces it.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: ods__tranzaxis__delinquency_history__unique_contract_id_effective_date
+          arguments:
+            combination_of_columns: [ "contract_id", "effective_date" ]
+    columns:
+      - name: contract_id
+        description: Contract whose state changed (ods__tranzaxis__contract.contract_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__delinquency_history__not_null_contract_id
+          - relationships:
+              name: ods__tranzaxis__delinquency_history__relationships_contract_id
+              arguments:
+                to: ref("ods__tranzaxis__contract")
+                field: contract_id
+              config:
+                severity: warn
+      - name: effective_date
+        description: Operating day from which the new state applies
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__delinquency_history__not_null_effective_date
+      - name: state
+        description: New delinquency state from the effective date, current (no overdue), dpd_1_30 to dpd_181_360 (overdue band by days past due) or written_off
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__delinquency_history__not_null_state
+          - accepted_values:
+              name: ods__tranzaxis__delinquency_history__accepted_values_state
+              arguments:
+                values: [ "current", "dpd_1_30", "dpd_31_60", "dpd_61_90", "dpd_91_180", "dpd_181_360", "written_off" ]
+      - name: previous_state
+        description: Delinquency state before the change, same values as state
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__delinquency_history__not_null_previous_state
+          - accepted_values:
+              name: ods__tranzaxis__delinquency_history__accepted_values_previous_state
+              arguments:
+                values: [ "current", "dpd_1_30", "dpd_31_60", "dpd_61_90", "dpd_91_180", "dpd_181_360" ]
+      - name: days_past_due
+        description: Days past due on the effective date; 0 for current and for written_off rows
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__delinquency_history__not_null_days_past_due
+      - name: recorded_at
+        description: Time the state change was recorded in TranzAxis, normally late in the evening of the effective date
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

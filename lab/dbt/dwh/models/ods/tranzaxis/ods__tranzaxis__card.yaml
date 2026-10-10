@@ -1,0 +1,87 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__card
+    description: >
+      Bank cards issued in TranzAxis, one row per card, current state: plastic, virtual and sticker cards of
+      the Humo and Uzcard networks. Only the masked PAN and a SHA-256 hash of the full number are stored; the
+      number itself is never in the DWH. A card belongs to a contract (ods__tranzaxis__contract) and a client
+      (ods__tranzaxis__client). Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__tranzaxis__card__equal_row_count
+          arguments:
+            compare_model: source("tranzaxis", "card")
+    columns:
+      - name: card_id
+        description: Internal card identifier in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_card_id
+          - unique:
+              name: ods__tranzaxis__card__unique_card_id
+      - name: contract_id
+        description: Contract the card is linked to (ods__tranzaxis__contract.contract_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_contract_id
+          - relationships:
+              name: ods__tranzaxis__card__relationships_contract_id
+              arguments:
+                to: ref("ods__tranzaxis__contract")
+                field: contract_id
+              config:
+                severity: warn
+      - name: client_id
+        description: Client holding the card (ods__tranzaxis__client.client_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_client_id
+      - name: product_type
+        description: Physical form of the card, plastic, virtual (digital only) or sticker
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_product_type
+          - accepted_values:
+              name: ods__tranzaxis__card__accepted_values_product_type
+              arguments:
+                values: [ "plastic", "virtual", "sticker" ]
+      - name: network
+        description: Payment network of the card, HUMO or UZCARD
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_network
+          - accepted_values:
+              name: ods__tranzaxis__card__accepted_values_network
+              arguments:
+                values: [ "HUMO", "UZCARD" ]
+      - name: status
+        description: Card status, active in the data
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_status
+          - accepted_values:
+              name: ods__tranzaxis__card__accepted_values_status
+              arguments:
+                values: [ "active" ]
+      - name: masked_pan
+        description: Card number with the middle digits hidden, first 6 and last 4 digits, for example 986032******6526
+      - name: issued_at
+        description: Time the card was issued
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_issued_at
+      - name: expiry_date
+        description: Date the card expires
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_expiry_date
+      - name: pan_hash
+        description: SHA-256 hash (64 hex characters) of the full 16-digit card number; the number itself is not stored. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card__not_null_pan_hash
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

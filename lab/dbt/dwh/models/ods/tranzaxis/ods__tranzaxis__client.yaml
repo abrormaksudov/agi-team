@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__client
+    description: >
+      TranzAxis client: one row per retail client of the credit and card engine, current state. The client
+      is the person behind one or more contracts. core_customer_code is the iABS customer code
+      (ods__iabs__customer.customer_code); pinfl is the identity bridge to the mobile app user and the iABS
+      individual. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__tranzaxis__client__equal_row_count
+          arguments:
+            compare_model: source("tranzaxis", "client")
+    columns:
+      - name: client_id
+        description: Internal client identifier in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__client__not_null_client_id
+          - unique:
+              name: ods__tranzaxis__client__unique_client_id
+      - name: core_customer_code
+        description: 8-digit iABS customer code of the same person (ods__iabs__customer.customer_code)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__client__not_null_core_customer_code
+      - name: pinfl
+        description: 14-digit personal identification number (PINFL) of the person. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__client__not_null_pinfl
+      - name: full_name
+        description: Full name of the person in Latin script. Personal data.
+      - name: birth_date
+        description: Date of birth. Personal data.
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__client__not_null_birth_date
+      - name: phone
+        description: Mobile phone number in +998 format. Personal data.
+      - name: risk_level
+        description: Client risk level assigned by the bank, low, medium or high
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__client__not_null_risk_level
+          - accepted_values:
+              name: ods__tranzaxis__client__accepted_values_risk_level
+              arguments:
+                values: [ "low", "medium", "high" ]
+      - name: created_at
+        description: Time the client was created in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__client__not_null_created_at
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

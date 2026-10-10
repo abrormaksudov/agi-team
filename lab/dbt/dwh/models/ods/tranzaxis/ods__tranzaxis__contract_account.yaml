@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__contract_account
+    description: >
+      Accounts of TranzAxis contracts: one row per contract account, current state. Each contract has a
+      settlement account and, for credit lines and microloans, accounts per role (principal, interest,
+      overdue, penalty, write-off, limit), kept in TranzAxis's own ledger (ods__tranzaxis__account_turnover);
+      the settlement account of a debit card is the customer's iABS card account. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__tranzaxis__contract_account__equal_row_count
+          arguments:
+            compare_model: source("tranzaxis", "contract_account")
+    columns:
+      - name: account_id
+        description: Internal account identifier in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract_account__not_null_account_id
+          - unique:
+              name: ods__tranzaxis__contract_account__unique_account_id
+      - name: contract_id
+        description: Contract the account belongs to (ods__tranzaxis__contract.contract_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract_account__not_null_contract_id
+          - relationships:
+              name: ods__tranzaxis__contract_account__relationships_contract_id
+              arguments:
+                to: ref("ods__tranzaxis__contract")
+                field: contract_id
+              config:
+                severity: warn
+      - name: account_number
+        description: 20-digit account number in the iABS format, balance account (5) + currency (3) + check digit (1) + customer code (8) + sequence (3)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract_account__not_null_account_number
+      - name: account_role
+        description: Role of the account in the contract, settlement (card account), principal, interest, overdue_principal, overdue_interest, penalty, write_off, write_off_interest or limit (credit line limit)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract_account__not_null_account_role
+          - accepted_values:
+              name: ods__tranzaxis__contract_account__accepted_values_account_role
+              arguments:
+                values: [ "settlement", "principal", "interest", "overdue_principal", "overdue_interest", "penalty", "write_off", "write_off_interest", "limit" ]
+      - name: balance_account
+        description: 5-digit balance account of the chart of accounts (ods__iabs__balance_account), for example 20500 settlement, 16100 principal, 91000 write-off
+      - name: currency_code
+        description: ISO currency code of the account, UZS in the data
+      - name: status
+        description: Account status, open in the data
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract_account__not_null_status
+          - accepted_values:
+              name: ods__tranzaxis__contract_account__accepted_values_status
+              arguments:
+                values: [ "open" ]
+      - name: open_date
+        description: Date the account was opened
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract_account__not_null_open_date
+      - name: close_date
+        description: Date the account was closed; empty while open
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__payment_schedule
+    description: >
+      Microloan annuity schedule of TranzAxis, one row per schedule line: contract, revision, debt kind
+      (principal or interest) and due date. scheduled_amount is the planned amount, paid_amount what was paid
+      on the line and unpaid_amount what is still open; unpaid_amount is 0 while a line is not yet due.
+      Amounts in tiyin (1/100 UZS). Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__tranzaxis__payment_schedule__equal_row_count
+          arguments:
+            compare_model: source("tranzaxis", "payment_schedule")
+    columns:
+      - name: schedule_line_id
+        description: Internal identifier of the schedule line in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_schedule_line_id
+          - unique:
+              name: ods__tranzaxis__payment_schedule__unique_schedule_line_id
+      - name: contract_id
+        description: Microloan contract (ods__tranzaxis__contract.contract_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_contract_id
+          - relationships:
+              name: ods__tranzaxis__payment_schedule__relationships_contract_id
+              arguments:
+                to: ref("ods__tranzaxis__contract")
+                field: contract_id
+              config:
+                severity: warn
+      - name: schedule_revision
+        description: Revision number of the schedule; 1 for the original annuity schedule, higher after a change
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_schedule_revision
+      - name: debt_kind
+        description: Kind of debt on the line, principal or interest
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_debt_kind
+          - accepted_values:
+              name: ods__tranzaxis__payment_schedule__accepted_values_debt_kind
+              arguments:
+                values: [ "principal", "interest" ]
+      - name: due_date
+        description: Date the amount is due
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_due_date
+      - name: scheduled_amount
+        description: Planned amount of the line, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_scheduled_amount
+      - name: paid_amount
+        description: Amount paid on the line, in tiyin
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_paid_amount
+      - name: unpaid_amount
+        description: Amount still open on the line, in tiyin; 0 when paid in full or while the line is not yet due
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__payment_schedule__not_null_unpaid_amount
+      - name: last_paid_date
+        description: Date of the last payment on the line; empty when nothing was paid
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

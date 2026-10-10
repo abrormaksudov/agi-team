@@ -1,0 +1,84 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__contract
+    description: >
+      TranzAxis product contract, one row per contract, current state: debit cards, credit lines and
+      microloans. A contract belongs to one client (ods__tranzaxis__client) and has its accounts in
+      ods__tranzaxis__contract_account. Amounts in tiyin (1/100 UZS); interest_rate is the annual rate in
+      percent. Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__tranzaxis__contract__equal_row_count
+          arguments:
+            compare_model: source("tranzaxis", "contract")
+    columns:
+      - name: contract_id
+        description: Internal contract identifier in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract__not_null_contract_id
+          - unique:
+              name: ods__tranzaxis__contract__unique_contract_id
+      - name: client_id
+        description: Client owning the contract (ods__tranzaxis__client.client_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract__not_null_client_id
+          - relationships:
+              name: ods__tranzaxis__contract__relationships_client_id
+              arguments:
+                to: ref("ods__tranzaxis__client")
+                field: client_id
+              config:
+                severity: warn
+      - name: contract_type
+        description: Type of the product, debit_card, credit_line (revolving credit line) or microloan (instalment loan)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract__not_null_contract_type
+          - accepted_values:
+              name: ods__tranzaxis__contract__accepted_values_contract_type
+              arguments:
+                values: [ "debit_card", "credit_line", "microloan" ]
+      - name: product_code
+        description: Product catalogue code, for example DC_STD for debit cards, PL_CARD_49 for credit lines and ML_<term>M_54 for microloans by term
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract__not_null_product_code
+          - accepted_values:
+              name: ods__tranzaxis__contract__accepted_values_product_code
+              arguments:
+                values: [ "DC_STD", "PL_CARD_49", "ML_3M_54", "ML_6M_54", "ML_9M_54", "ML_12M_54" ]
+      - name: status
+        description: Contract status, active, blocked, closed or written_off
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract__not_null_status
+          - accepted_values:
+              name: ods__tranzaxis__contract__accepted_values_status
+              arguments:
+                values: [ "active", "blocked", "closed", "written_off" ]
+      - name: currency_code
+        description: ISO currency code of the contract, UZS in the data
+      - name: credit_limit
+        description: Credit limit of a credit line in tiyin; empty for other contract types
+      - name: interest_rate
+        description: Annual interest rate in percent, for example 54.00; empty for debit cards
+      - name: term_months
+        description: Term of a microloan in months; empty for other contract types
+      - name: principal_amount
+        description: Amount of a microloan issued in tiyin; empty for other contract types
+      - name: settlement_account
+        description: 20-digit iABS card account of a debit card (ledger account 20500); empty for credit lines and microloans
+      - name: open_date
+        description: Date the contract was opened
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__contract__not_null_open_date
+      - name: close_date
+        description: Date the contract was closed; empty while open
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__mcc
+    description: >
+      Merchant category code (MCC) dictionary used by TranzAxis card transactions: one row per 4-digit code
+      with its description, category group and two risk flags. is_cash_like marks cash-equivalent merchants
+      (for example cash withdrawals and money transfers), is_high_risk marks merchant categories the bank
+      watches more closely (for example gambling). Full reload from the source every operating day.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          name: ods__tranzaxis__mcc__equal_row_count
+          arguments:
+            compare_model: source("tranzaxis", "mcc")
+    columns:
+      - name: mcc
+        description: 4-digit merchant category code
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__mcc__not_null_mcc
+          - unique:
+              name: ods__tranzaxis__mcc__unique_mcc
+      - name: description
+        description: Name of the merchant category, in English
+      - name: category_group
+        description: Reporting group of the category, for example grocery, transport, health or gambling
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__mcc__not_null_category_group
+          - accepted_values:
+              name: ods__tranzaxis__mcc__accepted_values_category_group
+              arguments:
+                values: [ "other", "transport", "health", "apparel", "travel", "grocery", "food_service", "digital", "telecom", "government", "electronics", "education", "cash", "transfers", "online_retail", "fuel", "utilities", "insurance", "gambling" ]
+      - name: is_cash_like
+        description: True for cash-equivalent merchant categories, such as cash withdrawals and money transfers
+      - name: is_high_risk
+        description: True for merchant categories the bank watches more closely
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

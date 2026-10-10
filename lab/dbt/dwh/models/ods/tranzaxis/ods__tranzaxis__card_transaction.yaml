@@ -1,0 +1,104 @@
+version: 2
+
+models:
+  - name: ods__tranzaxis__card_transaction
+    description: >
+      Card transactions of TranzAxis, one row per authorisation, clearing or reversal, by channel (POS, e-com,
+      ATM, contactless) with the merchant category (MCC) and status. amount is in minor units of the
+      transaction currency; amount_uzs is the amount in UZS tiyin (1/100 UZS). Loaded per operating day;
+      replaying a day replaces it.
+    columns:
+      - name: transaction_id
+        description: Internal transaction identifier in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_transaction_id
+          - unique:
+              name: ods__tranzaxis__card_transaction__unique_transaction_id
+      - name: card_id
+        description: Card used for the transaction (ods__tranzaxis__card.card_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_card_id
+      - name: contract_id
+        description: Contract of the card (ods__tranzaxis__contract.contract_id)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_contract_id
+      - name: oper_day
+        description: Operating day of the transaction
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_oper_day
+      - name: registered_at
+        description: Time the transaction was registered in TranzAxis
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_registered_at
+      - name: transaction_kind
+        description: Kind of operation, purchase, cash_withdrawal or transfer
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_transaction_kind
+          - accepted_values:
+              name: ods__tranzaxis__card_transaction__accepted_values_transaction_kind
+              arguments:
+                values: [ "purchase", "cash_withdrawal", "transfer" ]
+      - name: channel
+        description: Channel of the transaction, pos (terminal), ecom (online), atm or contactless
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_channel
+          - accepted_values:
+              name: ods__tranzaxis__card_transaction__accepted_values_channel
+              arguments:
+                values: [ "pos", "ecom", "atm", "contactless" ]
+      - name: mcc
+        description: 4-digit merchant category code of the merchant (ods__tranzaxis__mcc.mcc)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_mcc
+      - name: amount
+        description: Amount in the currency of the transaction, in minor units of that currency
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_amount
+      - name: currency_code
+        description: ISO currency code of the transaction, UZS or USD
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_currency_code
+          - accepted_values:
+              name: ods__tranzaxis__card_transaction__accepted_values_currency_code
+              arguments:
+                values: [ "UZS", "USD" ]
+      - name: amount_uzs
+        description: Amount converted to UZS, in tiyin (1/100 UZS)
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_amount_uzs
+      - name: status
+        description: Result of the transaction, approved or declined
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_status
+          - accepted_values:
+              name: ods__tranzaxis__card_transaction__accepted_values_status
+              arguments:
+                values: [ "approved", "declined" ]
+      - name: decline_reason
+        description: Reason of the decline, insufficient_funds, do_not_honor, wrong_pin or suspected_fraud; empty when approved
+        data_tests:
+          - accepted_values:
+              name: ods__tranzaxis__card_transaction__accepted_values_decline_reason
+              arguments:
+                values: [ "insufficient_funds", "do_not_honor", "wrong_pin", "suspected_fraud" ]
+      - name: rrn
+        description: Retrieval reference number (RRN) of the transaction, 12 digits
+        data_tests:
+          - not_null:
+              name: ods__tranzaxis__card_transaction__not_null_rrn
+      - name: dwh_job_id
+        description: Identifier of the load job (Airflow run) that wrote the row
+      - name: dwh_created_at
+        description: Time the row was written to the DWH

@@ -1,0 +1,7 @@
+#!/bin/sh
+# labday YYYY-MM-DD: state of the dbt__cod run of an operating day and its unsuccessful tasks.
+cd "$(dirname "$(readlink -f "$0")")/.." || exit 1
+d="$1"
+docker compose exec -T airflow-scheduler airflow dags state dbt__cod "oper_day__$d" 2>/dev/null | tail -1
+docker compose exec -T airflow-scheduler airflow tasks states-for-dag-run dbt__cod "oper_day__$d" -o plain 2>/dev/null \
+    | awk 'NR > 1 && $4 != "success" {print "  " $3, $4}'

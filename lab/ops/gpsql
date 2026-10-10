@@ -1,0 +1,4 @@
+#!/bin/sh
+# psql into the lab Greenplum (database dwh, user gpadmin); arguments and stdin pass through.
+exec docker exec -i -e PGPASSWORD=gpadmin agi-lab-greenplum-1 bash -c \
+    "source /usr/local/greenplum-db/greenplum_path.sh && psql -h 127.0.0.1 -U gpadmin -d dwh -X \"\$@\"" -- "$@"

@@ -1,0 +1,24 @@
+#!/bin/sh
+# labbackfill FROM TO [dbt selector]: play operating days FROM..TO fast, without Airflow scheduling — per day, load the
+# day's files into the sources with the sim__operating_day loader, then one `dbt run` (whole project, or the selector).
+# ~20 s a day at 10k. Leave the last days to the sim__operating_day DAG so Airflow has real run history.
+# Linux (GNU date); the stack must be up.
+set -eu
+d="$1"; last="$2"; select="${3:-}"
+ops="$(dirname "$(readlink -f "$0")")"
+cd "$ops/.."
+while [ "$(date -d "$d" +%s)" -le "$(date -d "$last" +%s)" ]; do
+    start=$(date +%s)
+    if [ -z "$select" ]; then
+        docker compose exec -T airflow-scheduler python -c "
+import sys; sys.path.insert(0, '/opt/airflow/dags')
+from sim__operating_day import load_day, CONFIG
+for source, config in CONFIG.items():
+    load_day.function(source, config['conn_id'], params={'oper_day': '$d'})
+" > /dev/null 2>&1 || { echo "$d LOAD FAILED"; exit 1; }
+    fi
+    out=$("$ops/labdbt" "$d" run --threads 6 ${select:+--select $select} 2>&1)
+    echo "$out" | grep -q "ERROR=0" || { echo "$d DBT FAILED"; echo "$out" | grep -E "ERROR|Error" | head -20; exit 1; }
+    echo "$d ok $(( $(date +%s) - start ))s"
+    d=$(date -d "$d +1 day" +%F)
+done

@@ -1,0 +1,13 @@
+#!/bin/sh
+# labdbt YYYY-MM-DD <dbt args...>: run dbt in the lab Airflow container for one operating day, with the vars the
+# dbt__cod DAG passes (whole UZT day). Example: lab/ops/labdbt 2026-08-01 build --select datamart__metrics_daily
+# DBT_WRITE_JSON=True writes manifest.json and run_results.json (the catalog's dbt pipeline reads them). Linux (GNU date).
+set -eu
+d="$1"; shift
+from=$(date -u -d "$d -1 day 19:00" +%Y-%m-%dT%H:%M:%S+00:00)
+to=$(date -u -d "$d 19:00" +%Y-%m-%dT%H:%M:%S+00:00)
+cd "$(dirname "$(readlink -f "$0")")/.."
+docker compose exec -T -e DBT_LOG_FORMAT=text -e DBT_DEBUG=False -e DBT_WRITE_JSON="${DBT_WRITE_JSON:-False}" airflow-scheduler bash -c \
+    "cd \$DBT_PROJECT_DIR && dbt \"\$@\" --vars \"{dwh_job_id: manual__$d, oper_day: \\\"$d\\\", load_from_datetime: \\\"$from\\\", load_to_datetime: \\\"$to\\\"}\"" \
+    -- "$@" 2>&1 \
+    | grep -v -E "^\s*$|Running with dbt|Registered adapter|Found [0-9]+ models|Concurrency|Unable to do partial|Performance info"

@@ -2,7 +2,7 @@ import asyncio
 
 import httpx
 import pytest
-from agi_agent.app import bearer, page_hint, state, user_of
+from agi_agent.app import app, bearer, page_hint, state, user_of
 from fastapi import HTTPException
 
 
@@ -73,3 +73,27 @@ def test_bearer_requires_a_bearer_header(header):
 
 def test_bearer_returns_the_token():
     assert bearer("Bearer abc ") == "abc"
+
+
+def demo_login(monkeypatch, **env: str) -> httpx.Response:
+    for name in ("DEMO_LOGIN_EMAIL", "DEMO_LOGIN_PASSWORD"):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+
+    async def get() -> httpx.Response:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://agent") as client:
+            return await client.get("/agent/demo-login")
+
+    return asyncio.run(get())
+
+
+def test_demo_login_returns_the_configured_login(monkeypatch):
+    r = demo_login(monkeypatch, DEMO_LOGIN_EMAIL="jury@agi.uz", DEMO_LOGIN_PASSWORD="pw")
+
+    assert r.status_code == 200
+    assert r.json() == {"email": "jury@agi.uz", "password": "pw"}
+
+
+def test_demo_login_is_off_without_a_password(monkeypatch):
+    assert demo_login(monkeypatch, DEMO_LOGIN_EMAIL="jury@agi.uz").status_code == 404

@@ -25,6 +25,7 @@ How the catalog's AI agent works. Ground rules: metadata only, propose-then-appl
 - `POST /agent/chat` `{conversation_id, message, page}` → server-sent events: `text` (answer chunks), `tool` (status line), `proposal` (card), `error`, `done` (LLM calls, tool calls, tokens, cost, seconds). `page` is the OM path; `/table/<fqn>` and similar become a hint ("the user is viewing …") so "document this table" works.
 - `POST /agent/proposals` `{proposal_id, action: apply|discard}`; only the proposal's owner may decide, once.
 - `GET /agent/health`.
+- `GET /agent/demo-login` → `{email, password}` for the sign-in page's "✦ Sign in as jury" button (`catalog.js`: shows the login under the form, fills it and submits on one tap). Compose passes `DEMO_LOGIN_EMAIL` (`jury@agi.uz`) and `DEMO_LOGIN_PASSWORD` (from `OM_JURY_PASSWORD` in the catalog's `.env`); 404 when the password is unset, which hides the button.
 - Conversations live in the agent's memory per (user, conversation); a restart forgets them. A failed or abandoned turn is rolled back, so history never holds a tool call without its result. Apply / Discard outcomes are passed to the model on the next turn.
 
 ## Journal

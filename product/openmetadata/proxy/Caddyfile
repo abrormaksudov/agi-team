@@ -1,0 +1,6 @@
+# Public entry: HTTPS (Let's Encrypt, automatic) in front of the catalog. sslip.io resolves the name to the server's IP.
+import catalog.caddy
+
+157-22-137-126.sslip.io {
+    import catalog
+}

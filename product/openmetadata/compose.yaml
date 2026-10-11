@@ -93,6 +93,22 @@ services:
       timeout: 5s
       retries: 30
 
+  proxy:
+    image: caddy:2.10.2
+    profiles: [public]  # agi-demo only (tools/deploy/deploy.sh); elsewhere it would take 80/443 and ask Let's Encrypt for the server's certificate
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./proxy:/etc/caddy:ro
+      - proxy-data:/data
+      - proxy-config:/config
+    depends_on:
+      openmetadata-server:
+        condition: service_healthy
+
   ingestion:
     build: ./ingestion
     image: agi-catalog/ingestion:2.0.5-pr32031
@@ -132,6 +148,8 @@ volumes:
   ingestion-dag-configs:
   ingestion-dags:
   ingestion-tmp:
+  proxy-data:
+  proxy-config:
   lab-dbt-state:
     external: true
     name: agi-lab_dbt-state

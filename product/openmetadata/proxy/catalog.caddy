@@ -1,0 +1,7 @@
+# Imported by the public site (Caddyfile).
+(catalog) {
+	handle {
+		encode zstd gzip
+		reverse_proxy openmetadata-server:8585
+	}
+}

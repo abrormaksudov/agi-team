@@ -1,0 +1,52 @@
+# Deploy to the demo server agi-demo (product/README.md, "Demo server"), on demand only: `gh workflow run deploy.yml`
+# deploys the head of main (`--ref <tag>` a tagged commit), or Run workflow in the Actions tab. Pushes never deploy.
+# The server checks the commit out in /opt/agi, then tools/deploy/deploy.sh brings both stacks and the catalog in line
+# with it. Each run is one entry in the repo's deployment history (environment agi-demo).
+# Secret DEPLOY_SSH_KEY: private half of the server's "github-actions deploy" key (restricted: commands only).
+name: deploy
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: agi-demo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: agi-demo
+      url: https://157-22-137-126.sslip.io
+    steps:
+      - name: Trust the server
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/agi-deploy
+          chmod 600 ~/.ssh/agi-deploy
+          echo "157.22.137.126 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILdpBtHrNdO+/6CQFXnugTT9mkjWwSIRsk422S482BKe" > ~/.ssh/known_hosts
+          printf '%s\n' "Host agi-demo" "  HostName 157.22.137.126" "  User root" "  IdentityFile ~/.ssh/agi-deploy" \
+            "  BatchMode yes" "  ServerAliveInterval 30" > ~/.ssh/config
+
+      # The job's own short-lived token lets the server fetch the private repo; it goes over stdin, never into argv.
+      - name: Check out ${{ github.sha }} on the server
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          { printf 'x-access-token:%s' "$TOKEN" | base64 -w0; echo; } | ssh agi-demo "set -e; read -r auth; cd /opt/agi
+            GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraHeader GIT_CONFIG_VALUE_0=\"Authorization: basic \$auth\" \
+              git fetch --quiet origin '+refs/heads/*:refs/remotes/origin/*'
+            git checkout --quiet --force --detach $GITHUB_SHA
+            git log -1 --format='now at %h %s'"
+
+      - name: Deploy
+        run: ssh agi-demo /opt/agi/tools/deploy/deploy.sh
+
+      - name: Smoke test
+        run: curl -fsS --retry 5 --retry-delay 10 --retry-all-errors https://157-22-137-126.sslip.io/api/v1/system/version

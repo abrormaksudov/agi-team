@@ -7,7 +7,7 @@ WIUT Hackathon 2026 · FinTech / AI in Finance · team AGI (ref. 70630E22)
 ## Try it
 
 - Live: <https://157-22-137-126.sslip.io>
-- On the sign-in page, tap **✦ Sign in as jury** (the login is shown under the button). The jury account is a Data Steward: it can read everything and edit descriptions, but cannot delete or reconfigure.
+- On the sign-in page, tap **✦ Sign in to the demo** (the login, `demo@agi.uz`, is shown under the button). The demo account is a Data Steward: it can read everything and edit descriptions, but cannot delete or reconfigure.
 - Click **✦ Ask AI** (or type a question into the search box and press Enter), e.g.:
   - How is a contract classified as overdue, and how are days past due counted?
   - Where does the 91–180 days figure in the overdue loans report come from, and which checks did it pass?
@@ -56,7 +56,7 @@ Needs Docker with at least 12 GB of memory and [uv](https://docs.astral.sh/uv/).
 1. Start the bank: `cd lab && docker compose up -d --build --wait` (Greenplum's first start takes minutes), then play the operating days: `lab/ops/labbackfill 2026-08-01 2026-09-30` ([docs/lab.md](docs/lab.md)).
 1. Secrets: `cp product/openmetadata/.env.example product/openmetadata/.env` and `cp product/agent/.env.example product/agent/.env`, then fill in the values (each file says how).
 1. Start the catalog: `cd product/openmetadata && docker compose up -d --build --wait`, then `python3 product/openmetadata/catalog/apply.py --run` (~10 min).
-1. Open <http://localhost:8590> (the catalog with the chat panel) and sign in with the jury account.
+1. Open <http://localhost:8590> (the catalog with the chat panel) and tap **✦ Sign in to the demo**.
 
 Deployment to the demo server runs from GitHub Actions on demand: [product/README.md](product/README.md).
 

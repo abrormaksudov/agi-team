@@ -130,9 +130,9 @@ services:
     env_file: ../agent/.env  # ANTHROPIC_API_KEY
     environment:
       OM_URL: http://openmetadata-server:8585
-      # the sign-in page's "Sign in as jury" button (catalog.js); unset password turns it off
-      DEMO_LOGIN_EMAIL: jury@agi.uz
-      DEMO_LOGIN_PASSWORD: ${OM_JURY_PASSWORD:-}
+      # the sign-in page's "Sign in to the demo" button (catalog.js); unset password turns it off
+      DEMO_LOGIN_EMAIL: demo@agi.uz
+      DEMO_LOGIN_PASSWORD: ${OM_DEMO_PASSWORD:-}
     ports:
       - "127.0.0.1:8600:8000"
     volumes:

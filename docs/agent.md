@@ -26,7 +26,7 @@ How the catalog's AI agent works. Ground rules: metadata only, propose-then-appl
 - `POST /agent/chat` `{conversation_id, message, page}` → server-sent events: `text` (answer chunks), `tool` (status line), `proposal` (card), `error`, `done` (LLM calls, tool calls, tokens, cost, seconds). `page` is the OM path; `/table/<fqn>` and similar become a hint ("the user is viewing …") so "document this table" works.
 - `POST /agent/proposals` `{proposal_id, action: apply|discard}`; only the proposal's owner may decide, once.
 - `GET /agent/health`.
-- `GET /agent/demo-login` → `{email, password}` for the sign-in page's "✦ Sign in as jury" button (`catalog.js`: shows the login under the form, fills it and submits on one tap). Compose passes `DEMO_LOGIN_EMAIL` (`jury@agi.uz`) and `DEMO_LOGIN_PASSWORD` (from `OM_JURY_PASSWORD` in the catalog's `.env`); 404 when the password is unset, which hides the button.
+- `GET /agent/demo-login` → `{email, password}` for the sign-in page's "✦ Sign in to the demo" button (`catalog.js`: shows the login under the form, fills it and submits on one tap). Compose passes `DEMO_LOGIN_EMAIL` (`demo@agi.uz`) and `DEMO_LOGIN_PASSWORD` (from `OM_DEMO_PASSWORD` in the catalog's `.env`); 404 when the password is unset, which hides the button.
 - Conversations live in the agent's memory per (user, conversation); a restart forgets them. A failed or abandoned turn is rolled back, so history never holds a tool call without its result. Apply / Discard outcomes are passed to the model on the next turn.
 
 ## Journal
@@ -39,7 +39,7 @@ How the catalog's AI agent works. Ground rules: metadata only, propose-then-appl
 
 ## Measured
 
-`product/agent/eval/`: `cases.json` (question, page, regexes the answer must and must not contain, proposal expected) and `run.py` (signs in as jury on the local catalog, runs each case through the live API, prints pass/fail, LLM calls, seconds, cost; results in `eval/results/`, gitignored). Run: `cd product/agent && uv run python eval/run.py --base http://localhost:8590 --runs 2`.
+`product/agent/eval/`: `cases.json` (question, page, regexes the answer must and must not contain, proposal expected) and `run.py` (signs in as the demo user on the local catalog, runs each case through the live API, prints pass/fail, LLM calls, seconds, cost; results in `eval/results/`, gitignored). Run: `cd product/agent && uv run python eval/run.py --base http://localhost:8590 --runs 2`.
 
 Latest (container through `proxy-local`, 10k data, Haiku 5.5, effort `low`): 7/7 passed, median 9.1 s, slowest 19.6 s (document this table), mean $0.0045 per question.
 

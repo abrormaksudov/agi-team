@@ -1,10 +1,10 @@
 [
   {
-    "name": "jury",
-    "email": "jury@agi.uz",
-    "displayName": "Jury",
-    "description": "Shared demo account for the hackathon jury: Data Steward, not admin, so the chat and the UI cannot delete or reconfigure the catalog.",
+    "name": "demo",
+    "email": "demo@agi.uz",
+    "displayName": "Demo",
+    "description": "Shared demo account: Data Steward, not admin, so the chat and the UI cannot delete or reconfigure the catalog.",
     "roles": ["DataSteward"],
-    "passwordEnv": "OM_JURY_PASSWORD"
+    "passwordEnv": "OM_DEMO_PASSWORD"
   }
 ]

@@ -99,7 +99,7 @@ async def health():
 
 @app.get("/agent/demo-login")
 async def demo_login():
-    """The shared demo login behind the sign-in page's "Sign in as jury" button; 404 unless the server sets both."""
+    """The shared demo login behind the sign-in page's "Sign in to the demo" button; 404 unless the server sets both."""
     email, password = os.environ.get("DEMO_LOGIN_EMAIL"), os.environ.get("DEMO_LOGIN_PASSWORD")
     if not (email and password):
         raise HTTPException(status_code=404)

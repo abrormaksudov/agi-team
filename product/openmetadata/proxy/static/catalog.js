@@ -57,7 +57,7 @@
     }
   }
 
-  // Demo access: a one-tap "Sign in as jury" under the sign-in form, with the login shown beside it. The agent serves
+  // Demo access: a one-tap "Sign in to the demo" under the sign-in form, with the login shown beside it. The agent serves
   // the login from the server's .env (/agent/demo-login, 404 when unset), so the repo never holds the password.
   var demo = null, demoAsked = false;
   function setInput(input, value) {
@@ -77,7 +77,7 @@
     var box = document.createElement('div');
     box.className = 'agi-demo';
     box.innerHTML = '<div class="agi-demo-or"><span>or</span></div>'
-      + '<button type="button" class="agi-demo-btn"><span class="agi-demo-mark">✦</span> Sign in as jury</button>'
+      + '<button type="button" class="agi-demo-btn"><span class="agi-demo-mark">✦</span> Sign in to the demo</button>'
       + '<div class="agi-demo-creds">Demo login: <code></code> · <code></code></div>';
     var codes = box.querySelectorAll('code');
     codes[0].textContent = demo.email;

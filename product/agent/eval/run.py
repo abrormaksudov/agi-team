@@ -2,7 +2,7 @@
 
     uv run python eval/run.py --base http://localhost:8601 --runs 2 [--only q4-document]
 
-Signs in as the jury on the LOCAL catalog (password from product/openmetadata/.env). Results go to eval/results/.
+Signs in as the demo user on the LOCAL catalog (password from product/openmetadata/.env). Results go to eval/results/.
 """
 
 import argparse
@@ -19,11 +19,11 @@ HERE = Path(__file__).parent
 OM = "http://localhost:8585"
 
 
-def jury_token() -> str:
+def demo_token() -> str:
     env = dict(line.split("=", 1) for line in (HERE / "../../openmetadata/.env").read_text().splitlines() if "=" in line)
-    password = env["OM_JURY_PASSWORD"].strip().strip('"')
+    password = env["OM_DEMO_PASSWORD"].strip().strip('"')
     r = httpx.post(f"{OM}/api/v1/users/login",
-                   json={"email": "jury@agi.uz", "password": base64.b64encode(password.encode()).decode()})
+                   json={"email": "demo@agi.uz", "password": base64.b64encode(password.encode()).decode()})
     r.raise_for_status()
     return r.json()["accessToken"]
 
@@ -64,7 +64,7 @@ def main():
     ap.add_argument("--only", action="append")
     args = ap.parse_args()
     cases = [c for c in json.loads((HERE / "cases.json").read_text()) if not args.only or c["id"] in args.only]
-    token = jury_token()
+    token = demo_token()
     stamp = time.strftime("%Y%m%d-%H%M%S") + "-" + args.base.rsplit(":", 1)[-1].strip("/")
     results = []
     for case in cases:

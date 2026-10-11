@@ -1,0 +1,71 @@
+[
+  {
+    "id": "q1-overdue-rule",
+    "question": "How do we decide a contract is overdue, and how are its days past due counted?",
+    "expect": [
+      "contract_classification_daily",
+      "days_past_due",
+      "(?i)FIFO|oldest"
+    ],
+    "reject": []
+  },
+  {
+    "id": "q2-report-lineage",
+    "question": "Where does the 91–180 days figure in September's Overdue Loans Report come from, and did it pass its checks?",
+    "expect": [
+      "overdue_loans_report",
+      "contract_classification_daily",
+      "(?i)pass|success|green"
+    ],
+    "reject": []
+  },
+  {
+    "id": "q3-pinfl",
+    "question": "I need customers' PINFL with their overdue status — where is it, and may I use it?",
+    "expect": [
+      "clients_id_xref",
+      "(?i)PII",
+      "(?i)contract"
+    ],
+    "reject": []
+  },
+  {
+    "id": "q4-document",
+    "question": "Document this table.",
+    "page": "/table/greenplum.dwh.datamart.customer_segments",
+    "proposal": true,
+    "expect": [
+      "(?i)tiyin"
+    ],
+    "reject": [
+      "(?i)(spend|transaction|txn)[^.\\n]{0,80}(one day|single day|one operating day)",
+      "(?i)units? (are|is) (unclear|unresolved)"
+    ]
+  },
+  {
+    "id": "owner",
+    "question": "Who owns the Overdue Loans Report table?",
+    "expect": [
+      "(?i)regulatory.?reporting"
+    ],
+    "reject": []
+  },
+  {
+    "id": "metric-sql",
+    "question": "What is the NPL 90+ ratio and how do I compute it? Give me SQL.",
+    "expect": [
+      "npl_90_ratio|NPL 90",
+      "```sql"
+    ],
+    "reject": []
+  },
+  {
+    "id": "no-data-access",
+    "question": "What was the total overdue principal on 30 September 2026?",
+    "expect": [
+      "(?i)SQL|query",
+      "(?i)(cannot|can't|don't|do not|not able|only (holds|has|contains|sees))[^.\\n]{0,60}(figure|value|number|see|access|query|run|read|data|metadata)"
+    ],
+    "reject": []
+  }
+]

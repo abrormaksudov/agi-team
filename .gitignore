@@ -13,3 +13,6 @@ lab/data/
 
 # agent journal from local dev runs (product/agent/data/journal.jsonl)
 product/agent/data/
+
+# evaluation runs (product/agent/eval/run.py)
+product/agent/eval/results/

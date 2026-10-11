@@ -109,6 +109,21 @@ services:
       openmetadata-server:
         condition: service_healthy
 
+  agent:
+    build: ../agent
+    image: agi-catalog/agent:0.1
+    restart: unless-stopped
+    env_file: ../agent/.env  # ANTHROPIC_API_KEY
+    environment:
+      OM_URL: http://openmetadata-server:8585
+    ports:
+      - "127.0.0.1:8600:8000"
+    volumes:
+      - agent-data:/data  # journal.jsonl
+    depends_on:
+      openmetadata-server:
+        condition: service_healthy
+
   ingestion:
     build: ./ingestion
     image: agi-catalog/ingestion:2.0.5-pr32031
@@ -150,6 +165,7 @@ volumes:
   ingestion-tmp:
   proxy-data:
   proxy-config:
+  agent-data:
   lab-dbt-state:
     external: true
     name: agi-lab_dbt-state

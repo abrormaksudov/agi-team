@@ -1,5 +1,12 @@
 # Imported by the public site (Caddyfile).
 (catalog) {
+	# The chat panel's backend (product/agent): answers stream as server-sent events, so no compression or buffering.
+	handle /agent/* {
+		reverse_proxy agent:8000 {
+			flush_interval -1
+		}
+	}
+
 	handle {
 		encode zstd gzip
 		reverse_proxy openmetadata-server:8585

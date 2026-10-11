@@ -227,10 +227,11 @@ body:has([data-testid="signin-page"]) .agi-chat {
     }
 }
 
-/* Home: the banner is the page. OM's widget grid (activity feed, data assets, context center) and the spacer it
-   overlapped are hidden; the subtitle stays on one line where it fits. */
+/* Home: the banner is the page. OM's widget grid (activity feed, data assets, context center), the spacer it
+   overlapped and the recently-viewed row are hidden; the subtitle stays on one line where it fits. */
 .grid-wrapper:has([data-testid="landing-page-header"]) .react-grid-layout,
-[data-testid="landing-page-header"] .overlapped-container {
+[data-testid="landing-page-header"] .overlapped-container,
+[data-testid="landing-page-header"] .recently-viewed-data-carousel {
     display: none !important;
 }
 

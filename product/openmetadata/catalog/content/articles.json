@@ -1,0 +1,157 @@
+[
+  {
+    "name": "contract-classification",
+    "title": "Contract classification",
+    "file": "articles/contract-classification.md",
+    "summary": "How every open credit line and microloan gets exactly one class each operating day: the first-match cascade, FIFO days past due versus consecutive overdue days, overdue bands, the stateful daily load and the checks that guard it.",
+    "domain": "Lending",
+    "relatedEntities": [
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.contract_classification_daily"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.contract_classification_tech"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.tx_turnover"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.dictionary.overdue_bands"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.ods__tranzaxis.delinquency_history"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.portfolio_daily"
+      },
+      {
+        "type": "pipeline",
+        "fqn": "lab_airflow.dbt__cod"
+      }
+    ]
+  },
+  {
+    "name": "overdue-loans-report",
+    "title": "Overdue Loans Report",
+    "file": "articles/overdue-loans-report.md",
+    "summary": "The monthly Central Bank report of overdue retail loans by borrower category and overdue band: how each cell is computed in thousand UZS, its lineage from TranzAxis to the report, and the checks it must pass.",
+    "domain": "Regulatory Reporting",
+    "relatedEntities": [
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart_regtech.overdue_loans_report"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.dictionary.overdue_report_rows"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.dictionary.overdue_bands"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.contract_classification_daily"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.contract_classification_tech"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.tx_turnover"
+      },
+      {
+        "type": "pipeline",
+        "fqn": "lab_airflow.dbt__cod"
+      }
+    ]
+  },
+  {
+    "name": "closing-of-day",
+    "title": "Closing of the operating day",
+    "file": "articles/closing-of-day.md",
+    "summary": "How one operating day flows from the source systems through the dbt__cod DAG and its checks into the catalog, how tables load, how to replay a day and what to do when a check fails.",
+    "relatedEntities": [
+      {
+        "type": "pipeline",
+        "fqn": "lab_airflow.dbt__cod"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.ods__iabs.operating_day"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.contract_classification_daily"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.kyc_funnel_daily"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart_regtech.overdue_loans_report"
+      }
+    ]
+  },
+  {
+    "name": "customer-identity",
+    "title": "Customer identity across systems",
+    "file": "articles/customer-identity.md",
+    "summary": "One person under three keys (app user, iABS customer, TranzAxis client) joined by PINFL in datamart.clients_id_xref: how to link and count people, which columns are personal data, and the rules for using them.",
+    "domain": "Customers",
+    "relatedEntities": [
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.clients_id_xref"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.ods__mobile.app_user"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.ods__iabs.customer"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.ods__iabs.customer_individual"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.ods__tranzaxis.client"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.portfolio_daily"
+      },
+      {
+        "type": "table",
+        "fqn": "greenplum.dwh.datamart.kyc_funnel_daily"
+      },
+      {
+        "type": "table",
+        "fqn": "mobile.mobile.users.app_user"
+      },
+      {
+        "type": "table",
+        "fqn": "iabs.iabs.core.customer_individual"
+      },
+      {
+        "type": "table",
+        "fqn": "tranzaxis.tranzaxis.tx.client"
+      },
+      {
+        "type": "pipeline",
+        "fqn": "lab_airflow.dbt__cod"
+      }
+    ]
+  }
+]

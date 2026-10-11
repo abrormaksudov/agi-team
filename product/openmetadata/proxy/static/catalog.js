@@ -49,7 +49,7 @@
   // title ("<page> | OpenMetadata", rewritten by OM on every page), the sign-in heading and the logo's alt text.
   function rebrand() {
     if (document.title.indexOf('OpenMetadata') >= 0) document.title = document.title.replace(/OpenMetadata/g, 'AGI');
-    var nodes = document.querySelectorAll('[data-testid="login-form-container"] h1, img[alt*="OpenMetadata"]');
+    var nodes = document.querySelectorAll('[data-testid="login-form-container"] .header-text, img[alt*="OpenMetadata"]');
     for (var i = 0; i < nodes.length; i++) {
       var n = nodes[i];
       if (n.tagName === 'IMG') n.alt = n.alt.replace(/OpenMetadata/g, 'AGI');

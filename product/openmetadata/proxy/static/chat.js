@@ -481,4 +481,14 @@
     if (!root) { start(); return; }
     getToken().then(function (token) { root.style.display = token ? '' : 'none'; });
   }, 3000);
+
+  // For catalog.js (home page shortcuts, table buttons): open the drawer, optionally asking a question.
+  window.agiOpen = function () { if (!root) build(); open(true); };
+  window.agiAsk = function (question) {
+    var text = (question || '').trim();
+    if (!text) return;
+    if (!root) build();
+    open(true);
+    if (busy) { input.value = text; input.focus(); } else { send(text); }
+  };
 })();

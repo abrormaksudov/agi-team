@@ -66,3 +66,163 @@
     color: #4f46e5;
     font-size: 12px;
 }
+
+/* The chat launcher needs a session: never on the sign-in page (an expired token would otherwise show it). */
+body:has([data-testid="signin-page"]) .agi-chat {
+    display: none !important;
+}
+
+.agi-tagline {
+    margin: -4px 0 20px;
+    text-align: center;
+    color: #667085;
+    font-size: 14px;
+}
+
+/* Home banner (catalog.js): promise, question chips, what AGI does. */
+.agi-home-sub {
+    margin: -8px auto 20px;
+    max-width: 640px;
+    text-align: center;
+    color: rgb(255 255 255 / 85%);
+    font-size: 16px;
+}
+
+.agi-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: -20px auto 24px;
+    max-width: 900px;
+}
+
+.agi-chip {
+    padding: 7px 14px;
+    border: 1px solid rgb(255 255 255 / 35%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 14%);
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.15s ease;
+}
+
+.agi-chip:hover {
+    background: rgb(255 255 255 / 26%);
+}
+
+.agi-features {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    align-self: center;
+    width: min(1120px, calc(100vw - 320px));
+    margin: 4px 0 24px;
+    text-align: left;
+}
+
+.agi-feature {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgb(255 255 255 / 96%);
+    box-shadow: 0 6px 20px rgb(16 24 40 / 14%);
+}
+
+.agi-feature strong {
+    color: #101828;
+    font-size: 15px;
+}
+
+.agi-feature p {
+    flex: 1;
+    margin: 0;
+    color: #475467;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.agi-feature button {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #4f46e5;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .agi-features {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+}
+
+@media (max-width: 560px) {
+    .agi-features {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Table pages: the assistant's actions next to the table name (catalog.js). */
+.agi-table-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 12px;
+}
+
+.agi-table-action {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 45%, #1570ef 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgb(79 70 229 / 30%);
+}
+
+.agi-table-action.agi-secondary-action {
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #4f46e5;
+    box-shadow: none;
+}
+
+/* Phones: OM's sidebar would take most of the width; the search box and the assistant reach every page. */
+@media (max-width: 768px) {
+    [data-testid="left-sidebar"] {
+        display: none !important;
+    }
+
+    [data-testid="landing-page-header"] .dashboard-header {
+        max-width: 100% !important;
+        padding: 24px 16px 16px !important;
+    }
+
+    [data-testid="landing-page-header"] .welcome-user {
+        font-size: 26px !important;
+    }
+
+    [data-testid="landing-page-header"] .customise-search-container > .d-flex {
+        flex-wrap: wrap;
+    }
+
+    [data-testid="customise-search-container"] {
+        flex: 1 1 100%;
+        width: 100% !important;
+    }
+
+    .agi-chips {
+        margin-top: -16px;
+    }
+}

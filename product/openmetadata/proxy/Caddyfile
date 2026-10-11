@@ -1,6 +1,6 @@
-# Public entry: HTTPS (Let's Encrypt, automatic) in front of the catalog. sslip.io resolves the name to the server's IP.
+# Public entry: HTTPS (Let's Encrypt, automatic) in front of the catalog. agicatalog.app is an A record (Cloudflare, DNS only); sslip.io resolves the name to the server's IP.
 import catalog.caddy
 
-157-22-137-126.sslip.io {
+agicatalog.app, 157-22-137-126.sslip.io {
     import catalog
 }

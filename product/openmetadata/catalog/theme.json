@@ -1,0 +1,17 @@
+{
+  "config_type": "customUiThemePreference",
+  "config_value": {
+    "customLogoConfig": {
+      "customLogoUrlPath": "/_agi/brand/logo.svg",
+      "customMonogramUrlPath": "/_agi/brand/monogram.svg",
+      "customFaviconUrlPath": "/_agi/brand/favicon.svg"
+    },
+    "customTheme": {
+      "primaryColor": "#4f46e5",
+      "errorColor": "",
+      "successColor": "",
+      "warningColor": "",
+      "infoColor": ""
+    }
+  }
+}

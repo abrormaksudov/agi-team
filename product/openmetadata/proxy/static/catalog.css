@@ -1,0 +1,8 @@
+/* Sign-in: the video panel is hidden, the form takes the page. */
+[data-testid="signin-page"] > :first-child {
+    display: none !important;
+}
+
+[data-testid="signin-page"] > :last-child {
+    flex: 1 1 100% !important;
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Placeholder AGI mark (team name); replace with the designed logo, same file name. -->
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset=".45" stop-color="#4f46e5"/><stop offset="1" stop-color="#1570ef"/></linearGradient></defs>
+  <rect width="32" height="32" rx="8" fill="url(#g)"/>
+  <path d="M16 5c.7 5.6 5.4 10.3 11 11-5.6.7-10.3 5.4-11 11-.7-5.6-5.4-10.3-11-11 5.6-.7 10.3-5.4 11-11z" fill="#fff"/>
+</svg>

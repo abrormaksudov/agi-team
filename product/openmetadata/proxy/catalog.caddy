@@ -27,7 +27,8 @@
 			match {
 				header Content-Type text/html*
 			}
-			</head> `<link rel="stylesheet" href="/_agi/chat.css"><script src="/_agi/chat.js" defer></script></head>`
+			<title>OpenMetadata</title> <title>AGI</title>
+			</head> `<link rel="stylesheet" href="/_agi/catalog.css"><script src="/_agi/catalog.js"></script><link rel="stylesheet" href="/_agi/chat.css"><script src="/_agi/chat.js" defer></script></head>`
 		}
 
 		reverse_proxy openmetadata-server:8585 {

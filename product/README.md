@@ -2,7 +2,7 @@
 
 What we pitch.
 
-- `openmetadata/` — catalog deployment and ingestion configs
+- `openmetadata/` — catalog deployment and ingestion configs; `proxy/static/` holds what the proxy injects into OM's pages: `catalog.js`/`.css` (first-visit prompts, AGI text), `chat.js`/`.css` (the chat panel and the search-box entry), `brand/` (AGI logo files)
 - `agent/` — AI agent backend (Python, Compose service `agent` in `openmetadata/compose.yaml`; design in [docs/agent.md](../docs/agent.md))
 
 ## Demo server

@@ -2,7 +2,7 @@
 
     python3 apply.py [--url http://localhost:8585] [--run]
 
-Logs in as admin (password from ../.env), PUTs teams.json, creates the users in users.json, PUTs every services/*.json (create-or-update, so a rerun
+Logs in as admin (password from ../.env), PUTs teams.json, creates the users in users.json, sets theme.json, PUTs every services/*.json (create-or-update, so a rerun
 changes nothing), deploys each pipeline to the ingestion Airflow, then applies the content in content/ (content.py:
 owners, domains, tiers, PII tags, glossary, metrics, articles, data contracts). With --run it first triggers the
 pipelines stage by stage, waiting for each stage to finish: 1 metadata, 2 dbt (needs the tables), 3 usage and
@@ -117,6 +117,12 @@ def apply_users(api: Api) -> None:
             print(f"user {spec['name']} ({', '.join(spec['roles'])})")
 
 
+def apply_theme(api: Api) -> None:
+    """theme.json: the AGI logo, sidebar mark, favicon (served by the proxy under /_agi/brand/) and primary colour."""
+    api.call("PUT", "/system/settings", json.loads((HERE / "theme.json").read_text()))
+    print("theme AGI")
+
+
 def drop_sample_data(api: Api, services: list[dict]) -> None:
     """The catalog keeps no sample rows: they would copy personal data out of the warehouse. Deletes any found."""
     for spec in services:
@@ -211,6 +217,7 @@ def main() -> None:
         api.call("PUT", "/teams", team)
         print(f"team {team['name']}")
     apply_users(api)
+    apply_theme(api)
     if args.content:
         apply_content(api, services)
         return

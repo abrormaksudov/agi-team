@@ -28,6 +28,7 @@ done
 echo "::endgroup::"
 
 echo "::group::catalog ${catalog_build:-(no image changes)}"
+changed product/openmetadata/proxy/Dockerfile && docker compose -f product/openmetadata/compose.yaml --profile public build proxy
 changed product/agent && docker compose -f product/openmetadata/compose.yaml --profile public build agent
 docker compose -f product/openmetadata/compose.yaml --profile public up -d $catalog_build --wait --remove-orphans
 # the proxy's config is mounted from the repo, so a changed file does not recreate the container

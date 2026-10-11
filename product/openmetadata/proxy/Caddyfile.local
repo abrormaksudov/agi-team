@@ -1,0 +1,6 @@
+# Local entry (service proxy-local): the public site's injection over plain HTTP on 127.0.0.1:8590, no certificates.
+import catalog.caddy
+
+http://:8590 {
+	import catalog
+}

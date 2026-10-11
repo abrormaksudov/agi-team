@@ -9,6 +9,29 @@
 
 	handle {
 		encode zstd gzip
-		reverse_proxy openmetadata-server:8585
+
+		handle_path /_agi/* {
+			root * /etc/caddy/static
+			header Cache-Control no-cache
+			file_server
+		}
+
+		# OM's page ETag never changes, so a browser that cached a page before an injection change would get 304 forever.
+		@page header Accept *text/html*
+		request_header @page -If-None-Match
+		request_header @page -If-Modified-Since
+		header @page -ETag
+
+		# replace-response reads only uncompressed bodies, so OM is asked for identity.
+		replace {
+			match {
+				header Content-Type text/html*
+			}
+			</head> `<link rel="stylesheet" href="/_agi/chat.css"><script src="/_agi/chat.js" defer></script></head>`
+		}
+
+		reverse_proxy openmetadata-server:8585 {
+			header_up Accept-Encoding identity
+		}
 	}
 }

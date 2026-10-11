@@ -94,7 +94,8 @@ services:
       retries: 30
 
   proxy:
-    image: caddy:2.10.2
+    build: ./proxy
+    image: agi-catalog/proxy:2.10.2-replace
     profiles: [public]  # agi-demo only (tools/deploy/deploy.sh); elsewhere it would take 80/443 and ask Let's Encrypt for the server's certificate
     restart: unless-stopped
     ports:
@@ -105,6 +106,19 @@ services:
       - ./proxy:/etc/caddy:ro
       - proxy-data:/data
       - proxy-config:/config
+    depends_on:
+      openmetadata-server:
+        condition: service_healthy
+
+  proxy-local:
+    build: ./proxy
+    image: agi-catalog/proxy:2.10.2-replace
+    command: caddy run --config /etc/caddy/Caddyfile.local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8590:8590"  # the catalog as the jury sees it (proxy/static injected); 8585 stays stock OM
+    volumes:
+      - ./proxy:/etc/caddy:ro
     depends_on:
       openmetadata-server:
         condition: service_healthy

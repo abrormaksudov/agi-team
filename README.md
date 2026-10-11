@@ -6,7 +6,7 @@ WIUT Hackathon 2026 · FinTech / AI in Finance · team AGI (ref. 70630E22)
 
 ## Try it
 
-- Live: <https://157-22-137-126.sslip.io>
+- Live: <https://agicatalog.app> (also <https://157-22-137-126.sslip.io>)
 - On the sign-in page, tap **✦ Sign in to the demo** (the login, `demo@agi.uz`, is shown under the button). The demo account is a Data Steward: it can read everything and edit descriptions, but cannot delete or reconfigure.
 - Click **✦ Ask AI** (or type a question into the search box and press Enter), e.g.:
   - How is a contract classified as overdue, and how are days past due counted?

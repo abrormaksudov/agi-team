@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     environment:
       name: agi-demo
-      url: https://157-22-137-126.sslip.io
+      url: https://agicatalog.app
     steps:
       - name: Trust the server
         env:
@@ -49,4 +49,4 @@ jobs:
         run: ssh agi-demo /opt/agi/tools/deploy/deploy.sh
 
       - name: Smoke test
-        run: curl -fsS --retry 5 --retry-delay 10 --retry-all-errors https://157-22-137-126.sslip.io/api/v1/system/version
+        run: curl -fsS --retry 5 --retry-delay 10 --retry-all-errors https://agicatalog.app/api/v1/system/version https://157-22-137-126.sslip.io/api/v1/system/version

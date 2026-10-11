@@ -1,0 +1,21 @@
+[project]
+name = "agi-agent"
+version = "0.1.0"
+description = "AI agent for the data catalog: Claude + OpenMetadata MCP, streamed to the chat panel"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "anthropic>=1.13.0",
+    "fastapi>=0.143.0",
+    "httpx>=0.28.1",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=9.1.1"]
+
+[build-system]
+requires = ["uv_build>=0.9,<0.12"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

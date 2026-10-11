@@ -226,3 +226,26 @@ body:has([data-testid="signin-page"]) .agi-chat {
         margin-top: -16px;
     }
 }
+
+/* Home: the banner is the page. OM's widget grid (activity feed, data assets, context center) and the spacer it
+   overlapped are hidden; the subtitle stays on one line where it fits. */
+.grid-wrapper:has([data-testid="landing-page-header"]) .react-grid-layout,
+[data-testid="landing-page-header"] .overlapped-container {
+    display: none !important;
+}
+
+@media (min-width: 1100px) {
+    .agi-home-sub {
+        align-self: center;
+        width: max-content;
+        max-width: none;
+        white-space: nowrap;
+    }
+
+    .agi-chips {
+        align-self: center;
+        flex-wrap: nowrap;
+        width: max-content;
+        max-width: none;
+    }
+}
